@@ -294,61 +294,299 @@ class PacienteDetailScreen extends StatefulWidget {
   State<PacienteDetailScreen> createState() => _PacienteDetailScreenState();
 }
 
-class _PacienteDetailScreenState extends State<PacienteDetailScreen> with TickerProviderStateMixin {
-  late TabController tabController;
+class _PacienteDetailScreenState extends State<PacienteDetailScreen>
+    with TickerProviderStateMixin {
+  late final TabController _tabController = TabController(length: 4, vsync: this);
 
-  @override
-  void initState() {
-    super.initState();
-    tabController = TabController(length: 4, vsync: this);
-  }
+  DateTime _focusedDay = DateTime.now();
+  DateTime? _selectedDay;
+
+  static const Color _kPrimary = Color(0xFF2F76A6);
+  static const Color _kPrimaryDark = Color(0xFF0E3A5C);
 
   @override
   Widget build(BuildContext context) {
-    final seleccionado = widget.paciente;
+    final p = widget.paciente;
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text(seleccionado.nombre),
-        backgroundColor: Colors.blue.shade100,
-        elevation: 1,
-        actions: [
-          OutlinedButton(onPressed: () {}, child: const Text("Editar")),
-        ],
-        bottom: TabBar(
-          controller: tabController,
-          labelColor: Colors.blue,
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+        },
+        icon: const Icon(Icons.pets, color: Colors.white),
+        label: const Text('Editar', style: TextStyle(color: Colors.white)),
+        backgroundColor: _kPrimary,
+      ),
+      body: NestedScrollView(
+        headerSliverBuilder: (context, innerScrolled) => [
+          SliverAppBar(
+  pinned: true,
+  expandedHeight: 380, 
+  elevation: 0,
+  backgroundColor: _kPrimary,
+   leading: Navigator.of(context).canPop()
+      ? const BackButton(color: Colors.white)
+      : null,
+  iconTheme: const IconThemeData(color: Colors.white),
+  flexibleSpace: FlexibleSpaceBar(
+    collapseMode: CollapseMode.pin,
+    background: Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment(0.0, -1.0),
+          end: Alignment(0.6, 1.0),
+          colors: [_kPrimaryDark, _kPrimary],
+        ),
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, kToolbarHeight + 12, 16, 48), 
+          child: _headerCard(context, p),
+        ),
+      ),
+    ),
+  ),
+
+  // Mismo bottom (TabBar), solo le damos margen superior para que se vea más azul entre ambos
+  bottom: PreferredSize(
+  preferredSize: const Size.fromHeight(16 + kTextTabBarHeight + 12),
+  child: Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      const SizedBox(height: 16), 
+      Container(
+        margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(.12),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.white.withOpacity(.25)),
+        ),
+        child: TabBar(
+          controller: _tabController,
+          isScrollable: true,
+          indicator: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          labelColor: _kPrimaryDark,
+          unselectedLabelColor: Colors.white,
+          splashBorderRadius: BorderRadius.circular(10),
           tabs: const [
-            Tab(text: "Perfil"),
-            Tab(text: "Vacunas"),
-            Tab(text: "Desparasitación"),
-            Tab(text: "Historial"),
+            Tab(icon: Icon(Icons.pets), text: 'Perfil'),
+            Tab(icon: Icon(Icons.vaccines), text: 'Vacunas'),
+            Tab(icon: Icon(Icons.shield), text: 'Desparasitación'),
+            Tab(icon: Icon(Icons.history), text: 'Historial'),
           ],
         ),
       ),
-      body: TabBarView(
-        controller: tabController,
-        children: [
-          _buildPerfil(seleccionado),
-          _buildVacunas(seleccionado),
-          _buildDesparasitaciones(seleccionado),
-          _buildHistorial(seleccionado),
+    ],
+  ),
+)
+
+
+)
+
         ],
+        body: TabBarView(
+          controller: _tabController,
+          children: [
+            _buildPerfil(p),
+            _buildVacunas(p),
+            _buildDesparasitaciones(p),
+            _buildHistorial(p),
+          ],
+        ),
       ),
     );
   }
 
+  /* ===================== Header con foto ===================== */
+  Widget _headerCard(BuildContext context, Paciente p) {
+    final micro = p.microchip.isEmpty ? '—' : p.microchip;
+    final sexo = p.sexo.isEmpty ? '—' : p.sexo;
+    final peso = p.peso.isEmpty ? '—' : p.peso;
+
+    return Material(
+      color: Colors.white.withOpacity(.12),
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.white.withOpacity(.25)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Avatar + botón agregar foto (placeholder)
+            Stack(
+              alignment: Alignment.bottomRight,
+              children: [
+                Container(
+                  width: 84,
+                  height: 84,
+                  decoration: const BoxDecoration(shape: BoxShape.circle),
+                  child: CircleAvatar(
+                    radius: 42,
+                    backgroundColor: Colors.white,
+                    // Si luego tienes una URL: backgroundImage: NetworkImage(p.fotoUrl),
+                    child: const Icon(Icons.pets, color: _kPrimary, size: 36),
+                  ),
+                ),
+                Material(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  child: InkWell(
+                    onTap: () {
+                      // TODO: abrir selector de imagen / cámara
+                    },
+                    borderRadius: BorderRadius.circular(16),
+                    child: const Padding(
+                      padding: EdgeInsets.all(4.0),
+                      child: Icon(Icons.add_a_photo, size: 16, color: _kPrimaryDark),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(width: 14),
+            // Texto flexible para evitar overflow
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    p.nombre,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleLarge
+                        ?.copyWith(color: Colors.white, fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    p.propietario.nombre,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context)
+                        .textTheme
+                        .labelLarge
+                        ?.copyWith(color: Colors.white.withOpacity(.9)),
+                  ),
+                  const SizedBox(height: 10),
+                  LayoutBuilder(
+                    builder: (_, __) => Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _chip(context, Icons.qr_code_2, 'Microchip', micro),
+                        _chip(context, Icons.female, 'Sexo', sexo),
+                        _chip(context, Icons.monitor_weight, 'Peso', peso),
+                        _chip(context, Icons.location_city, 'Sucursal', p.sucursal),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _chip(BuildContext context, IconData icon, String label, String value) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 180), 
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(.14),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white.withOpacity(.25)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: Colors.white),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                '$label: $value',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context)
+                    .textTheme
+                    .labelMedium
+                    ?.copyWith(color: Colors.white, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /* ===================== Pestañas ===================== */
+
   Widget _buildPerfil(Paciente p) {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: ListView(
-        children: [
-          ListTile(title: const Text("Microchip"), subtitle: Text(p.microchip)),
-          ListTile(title: const Text("Sexo"), subtitle: Text(p.sexo)),
-          ListTile(title: const Text("Peso"), subtitle: Text(p.peso)),
-          ListTile(title: const Text("Fecha Nac."), subtitle: Text(p.fechaNac)),
-          ListTile(title: const Text("Propietario"), subtitle: Text(p.propietario.nombre)),
-          ListTile(title: const Text("Dirección"), subtitle: Text(p.propietario.direccion)),
-        ],
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+      children: [
+        _infoCard(context, 'Datos generales', [
+          _kv('Microchip', p.microchip),
+          _kv('Sexo', p.sexo),
+          _kv('Peso', p.peso),
+          _kv('Fecha de nacimiento', p.fechaNac),
+        ]),
+        const SizedBox(height: 12),
+        _infoCard(context, 'Propietario', [
+          _kv('Nombre', p.propietario.nombre),
+          _kv('Dirección', p.propietario.direccion),
+        ]),
+      ],
+    );
+  }
+
+  Widget _infoCard(BuildContext context, String title, List<Widget> children) {
+    return Card(
+      elevation: 0,
+      color: Colors.blueGrey.shade50,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium
+                  ?.copyWith(fontWeight: FontWeight.w800, color: _kPrimaryDark),
+            ),
+            const SizedBox(height: 8),
+            ...children,
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _kv(String label, String value) {
+    final v = value.isEmpty ? '—' : value;
+    return ListTile(
+      dense: true,
+      contentPadding: EdgeInsets.zero,
+      title: Text(label, style: const TextStyle(color: Colors.blueGrey)),
+      subtitle: Text(
+        v,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(fontWeight: FontWeight.w600),
       ),
     );
   }
@@ -356,125 +594,214 @@ class _PacienteDetailScreenState extends State<PacienteDetailScreen> with Ticker
   Widget _buildVacunas(Paciente p) {
     final eventos = <DateTime, List<Vacuna>>{};
     for (final v in p.vacunas) {
-      final partes = v.fecha.split(' ');
-      if (partes.length == 3) {
-        final dia = int.tryParse(partes[0]) ?? 1;
-        final mes = _mesStrToInt(partes[1]);
-        final anio = int.tryParse(partes[2]) ?? 2024;
-        final fecha = DateTime(anio, mes, dia);
-        eventos.putIfAbsent(fecha, () => []).add(v);
+      final fecha = _parseFechaCorta(v.fecha);
+      if (fecha != null) {
+        final key = DateTime(fecha.year, fecha.month, fecha.day);
+        eventos.putIfAbsent(key, () => []).add(v);
       }
     }
 
-    DateTime focusedDay = DateTime.now();
-    DateTime? selectedDay;
+    List<Vacuna> eventsOf(DateTime day) =>
+        eventos[DateTime(day.year, day.month, day.day)] ?? [];
 
-    return StatefulBuilder(
-      builder: (context, setState) {
-        return Column(
-          children: [
-            TableCalendar(
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 100),
+      children: [
+        Card(
+          elevation: 0,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TableCalendar<Vacuna>(
               firstDay: DateTime(DateTime.now().year - 2),
               lastDay: DateTime(DateTime.now().year + 2),
-              focusedDay: focusedDay,
-              selectedDayPredicate: (day) => isSameDay(selectedDay, day),
+              focusedDay: _focusedDay,
+              selectedDayPredicate: (day) =>
+                  _selectedDay != null && isSameDay(_selectedDay, day),
               calendarFormat: CalendarFormat.month,
-              eventLoader: (day) => eventos[day] ?? [],
-              onDaySelected: (selectedDay, focusedDay) {
+              eventLoader: eventsOf,
+              onDaySelected: (sel, foc) {
                 setState(() {
-                  selectedDay = selectedDay;
-                  focusedDay = focusedDay;
+                  _selectedDay = sel;
+                  _focusedDay = foc;
                 });
               },
-              calendarStyle: CalendarStyle(
-                markerDecoration: BoxDecoration(
-                  color: Colors.green.shade400,
-                  shape: BoxShape.circle,
-                ),
-                todayDecoration: BoxDecoration(
-                  color: Colors.blue.shade200,
-                  shape: BoxShape.circle,
-                ),
-                selectedDecoration: BoxDecoration(
-                  color: Colors.orange.shade400,
-                  shape: BoxShape.circle,
-                ),
-              ),
               headerStyle: const HeaderStyle(
                 formatButtonVisible: false,
                 titleCentered: true,
               ),
-            ),
-            const SizedBox(height: 16),
-            if (selectedDay != null && eventos[selectedDay] != null)
-              ...eventos[selectedDay]!.map((v) => Card(
-                color: Colors.green.shade50,
-                child: ListTile(
-                  title: Text("${v.fecha} - ${v.lote}"),
-                  subtitle: Text("${v.veterinaria} • Adjuntos: ${v.adjuntos}"),
+              calendarStyle: CalendarStyle(
+                todayDecoration: BoxDecoration(
+                  color: _kPrimary.withOpacity(.35),
+                  shape: BoxShape.circle,
                 ),
-              )),
-            if (selectedDay != null && (eventos[selectedDay] == null || eventos[selectedDay]!.isEmpty))
-              const Padding(
-                padding: EdgeInsets.all(12.0),
-                child: Text("No hay vacunas registradas en este día.", style: TextStyle(color: Colors.grey)),
+                selectedDecoration: const BoxDecoration(
+                  color: _kPrimary,
+                  shape: BoxShape.circle,
+                ),
+                markerDecoration: const BoxDecoration(
+                  color: Colors.green,
+                  shape: BoxShape.circle,
+                ),
               ),
-            if (selectedDay == null)
-              const Padding(
-                padding: EdgeInsets.all(12.0),
-                child: Text("Selecciona un día para ver detalles.", style: TextStyle(color: Colors.grey)),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        if (_selectedDay == null)
+          _emptyState('Selecciona un día para ver las vacunas aplicadas.', Icons.calendar_today),
+        if (_selectedDay != null) ...[
+          ...eventsOf(_selectedDay!).map(
+            (v) => Card(
+              color: Colors.green.shade50,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: ListTile(
+                leading: const Icon(Icons.vaccines, color: Colors.green),
+                title: Text(
+                  '${v.fecha}  •  Lote: ${v.lote}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                subtitle: Text(
+                  '${v.veterinaria}  •  Adjuntos: ${v.adjuntos}',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                isThreeLine: true,
               ),
-          ],
-        );
-      },
+            ),
+          ),
+          if (eventsOf(_selectedDay!).isEmpty)
+            _emptyState('No hay vacunas registradas en este día.', Icons.inbox_outlined),
+        ],
+      ],
     );
   }
 
-  int _mesStrToInt(String mes) {
-    switch (mes.toLowerCase()) {
-      case 'ene': return 1;
-      case 'feb': return 2;
-      case 'mar': return 3;
-      case 'abr': return 4;
-      case 'may': return 5;
-      case 'jun': return 6;
-      case 'jul': return 7;
-      case 'ago': return 8;
-      case 'sep': return 9;
-      case 'oct': return 10;
-      case 'nov': return 11;
-      case 'dic': return 12;
-      default: return 1;
-    }
-  }
-
   Widget _buildDesparasitaciones(Paciente p) {
-    if (p.desparasitaciones.isEmpty) return _empty("Sin registros de desparasitación");
-    return ListView(
-      children: p.desparasitaciones
-          .map((d) => ListTile(title: Text("${d.tipo}: ${d.producto}"), subtitle: Text(d.fecha)))
-          .toList(),
+    if (p.desparasitaciones.isEmpty) {
+      return _emptyState('Sin registros de desparasitación', Icons.inbox_outlined);
+    }
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+      itemBuilder: (_, i) {
+        final d = p.desparasitaciones[i];
+        return Card(
+          elevation: 0,
+          color: Colors.indigo.shade50,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: ListTile(
+            leading: const Icon(Icons.shield, color: _kPrimary),
+            title: Text(
+              '${d.tipo}: ${d.producto}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+            subtitle: Text(d.fecha),
+          ),
+        );
+      },
+      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      itemCount: p.desparasitaciones.length,
     );
   }
 
   Widget _buildHistorial(Paciente p) {
-    if (p.historial.isEmpty) return _empty("Sin notas clínicas");
-    return ListView(
-      children: p.historial
-          .map((h) => ListTile(
-                title: Text(h.nota),
-                subtitle: Text(h.fecha),
-              ))
-          .toList(),
+    if (p.historial.isEmpty) {
+      return _emptyState('Sin notas clínicas', Icons.note_alt_outlined);
+    }
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+      itemBuilder: (_, i) {
+        final h = p.historial[i];
+        return Card(
+          elevation: 0,
+          color: Colors.orange.shade50,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: ListTile(
+            leading: const Icon(Icons.note_alt_outlined, color: Colors.deepOrange),
+            title: Text(h.nota, maxLines: 2, overflow: TextOverflow.ellipsis),
+            subtitle: Text(h.fecha),
+            isThreeLine: true,
+          ),
+        );
+      },
+      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      itemCount: p.historial.length,
     );
   }
 
-  Widget _empty(String msg) {
+  Widget _emptyState(String msg, IconData icon) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
-        child: Text(msg, style: const TextStyle(color: Colors.grey)),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 22, color: Colors.blueGrey),
+            const SizedBox(width: 8),
+            Flexible(child: Text(msg, style: const TextStyle(color: Colors.blueGrey))),
+          ],
+        ),
       ),
     );
+  }
+
+  /* ===================== Helpers ===================== */
+
+  DateTime? _parseFechaCorta(String raw) {
+    if (raw.trim().isEmpty) return null;
+    final norm = raw.toLowerCase().replaceAll(RegExp(r'[-/]+'), ' ').trim();
+    final parts = norm.split(RegExp(r'\s+'));
+    if (parts.length < 3) return null;
+    final dia = int.tryParse(parts[0]) ?? 1;
+    final mes = _mesStrToInt(parts[1]);
+    final anio = int.tryParse(parts[2]) ?? DateTime.now().year;
+    return DateTime(anio, mes, dia);
+  }
+
+  int _mesStrToInt(String mes) {
+    switch (mes.toLowerCase()) {
+      case 'ene':
+      case 'enero':
+        return 1;
+      case 'feb':
+      case 'febrero':
+        return 2;
+      case 'mar':
+      case 'marzo':
+        return 3;
+      case 'abr':
+      case 'abril':
+        return 4;
+      case 'may':
+      case 'mayo':
+        return 5;
+      case 'jun':
+      case 'junio':
+        return 6;
+      case 'jul':
+      case 'julio':
+        return 7;
+      case 'ago':
+      case 'agosto':
+        return 8;
+      case 'sep':
+      case 'sept':
+      case 'septiembre':
+        return 9;
+      case 'oct':
+      case 'octubre':
+        return 10;
+      case 'nov':
+      case 'noviembre':
+        return 11;
+      case 'dic':
+      case 'diciembre':
+        return 12;
+      default:
+        return 1;
+    }
   }
 }

@@ -40,6 +40,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   late final AnimationController _shimmerCtrl =
       AnimationController(vsync: this, duration: const Duration(milliseconds: 2400))..repeat();
 
+
   Timer? _timer;
 
   @override

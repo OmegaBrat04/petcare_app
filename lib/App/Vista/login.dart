@@ -213,7 +213,11 @@ class _LoginPawViewState extends State<LoginPawView> with SingleTickerProviderSt
               const Spacer(),
               TextButton(
                 onPressed: () {},
-                child: const Text('¿Olvidaste tu contraseña?'),
+                child: const Text('¿Olvidaste tu contraseña?', style: TextStyle(
+                  decoration: TextDecoration.underline,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),),
               )
             ],
           ),
@@ -256,7 +260,7 @@ class _LoginPawViewState extends State<LoginPawView> with SingleTickerProviderSt
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const PetCareSignUpApp()),
+                  MaterialPageRoute(builder: (_) => const SignUpPawView()),
                 );
               },
               child: const Text.rich(TextSpan(children: [

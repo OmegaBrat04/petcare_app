@@ -1,21 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:petcare_app/App/Controlador/auth_controller.dart';
+import 'package:petcare_app/App/Vista/Splash.dart';
 
 void main() {
-  runApp(const MainApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => AuthController(),
+      child: const PetCareApp(),
+    ),
+  );
 }
-
-class MainApp extends StatelessWidget {
-  const MainApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: Scaffold(
-        body: Center(
-          child: Text('Hola Mundo'),
-        ),
-      ),
-    );
-  }
-}
-

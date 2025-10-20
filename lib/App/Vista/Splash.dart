@@ -3,6 +3,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:petcare_app/App/Controlador/auth_controller.dart';
+import 'package:petcare_app/App/Vista/Menu.dart';
+import 'package:petcare_app/App/Vista/formularioMascota.dart';
 import 'package:petcare_app/App/Vista/login.dart';
 import 'package:provider/provider.dart';
 
@@ -42,6 +44,8 @@ class PetCareApp extends StatelessWidget {
       routes: {
         '/': (_) => const SplashScreen(),
         '/login': (_) => const LoginPawView(),
+        '/menu': (_) => Menu(),
+        '/formularioMascota': (_) => FormularioMascota(),
       },
     );
   }

@@ -60,6 +60,7 @@ class _LoginPawViewState extends State<LoginPawView>
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('¡Bienvenido/a a PetCare!')),
         );
+        Navigator.pushReplacementNamed(context, '/menu');
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

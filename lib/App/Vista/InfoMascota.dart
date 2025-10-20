@@ -1,27 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'formularioMascota.dart';
 
 void main() {
-  runApp(MaterialApp(
-    title: 'PetCare App',
-    debugShowCheckedModeBanner: false,
-    theme: ThemeData(
-      useMaterial3: true,
-      colorSchemeSeed: Color(0xFF2F76A6),
-      fontFamily: 'Roboto',
-      inputDecorationTheme: InputDecorationTheme(
-        hintStyle: TextStyle(color: Colors.blueGrey),
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.all(Radius.circular(14)),
-          borderSide: BorderSide.none,
+  runApp(
+    MaterialApp(
+      title: 'PetCare App',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        useMaterial3: true,
+        colorSchemeSeed: Color(0xFF2F76A6),
+        fontFamily: 'Roboto',
+        inputDecorationTheme: InputDecorationTheme(
+          hintStyle: TextStyle(color: Colors.blueGrey),
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(14)),
+            borderSide: BorderSide.none,
+          ),
         ),
       ),
+      home: PacientesListScreen(),
     ),
-    home: PacientesListScreen(),
-  ));
+  );
 }
 
 class Paciente {
@@ -103,17 +106,27 @@ final List<Paciente> pacientes = [
     nombre: "Luna",
     especie: "Felino",
     raza: "Siames",
-    propietario: Propietario(nombre: "Ana López", direccion: "456 Calle B, Ciudad"),
+    propietario: Propietario(
+      nombre: "Ana López",
+      direccion: "456 Calle B, Ciudad",
+    ),
     edad: "5 años",
     ultimaVisita: "15 abr 2024",
     sucursal: "Central",
     microchip: "981020000123456",
-    sexo: "Hembra",
+    sexo: "H",
     peso: "4.5 kg",
     fechaNac: "2019-03-10",
     vacunas: [Vacuna("05 feb 2024", "LOT-AZ12", "Central", 1)],
-    desparasitaciones: [Desparasitacion("Interna", "Albendazol", "10 ene 2024")],
-    historial: [Historial("15 abr 2024", "Consulta por control anual. Examen físico normal.")],
+    desparasitaciones: [
+      Desparasitacion("Interna", "Albendazol", "10 ene 2024"),
+    ],
+    historial: [
+      Historial(
+        "15 abr 2024",
+        "Consulta por control anual. Examen físico normal.",
+      ),
+    ],
     documentos: [Documento("PDF", "Constancia vacunación.pdf", "05 feb 2024")],
     etiquetas: ["Esterilizada", "Al día"],
   ),
@@ -122,12 +135,15 @@ final List<Paciente> pacientes = [
     nombre: "Thor",
     especie: "Canino",
     raza: "Golden Retriever",
-    propietario: Propietario(nombre: "Carlos Gómez", direccion: "Av. Alameda 120"),
+    propietario: Propietario(
+      nombre: "Carlos Gómez",
+      direccion: "Av. Alameda 120",
+    ),
     edad: "3 años",
     ultimaVisita: "20 mar 2024",
     sucursal: "Oeste",
     microchip: "980000000001234",
-    sexo: "Macho",
+    sexo: "M",
     peso: "28 kg",
     fechaNac: "2021-01-02",
     vacunas: [],
@@ -164,6 +180,31 @@ class PacientesListScreen extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                 child: Row(
                   children: [
+                    Row(
+                      children: [
+                        IconButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                          },
+                          icon: Icon(
+                            Icons.arrow_back,
+                            color: Colors.white,
+                            size: 28,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Text(
+                          'Volver',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w500,
+                            fontFamily: 'Roboto',
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(width: 8),
                     CircleAvatar(
                       radius: 28,
                       backgroundColor: Colors.white.withOpacity(.25),
@@ -173,7 +214,11 @@ class PacientesListScreen extends StatelessWidget {
                           color: Colors.white.withOpacity(.85),
                           shape: BoxShape.circle,
                           boxShadow: [
-                            BoxShadow(color: Colors.black.withOpacity(.08), blurRadius: 8, spreadRadius: 1),
+                            BoxShadow(
+                              color: Colors.black.withOpacity(.08),
+                              blurRadius: 8,
+                              spreadRadius: 1,
+                            ),
                           ],
                         ),
                         child: ClipOval(
@@ -206,9 +251,16 @@ class PacientesListScreen extends StatelessWidget {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(24),
                     color: Colors.white.withOpacity(.72),
-                    border: Border.all(color: Colors.white.withOpacity(.8), width: 1),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(.8),
+                      width: 1,
+                    ),
                     boxShadow: [
-                      BoxShadow(color: Colors.black.withOpacity(.18), blurRadius: 24, offset: const Offset(0, 12)),
+                      BoxShadow(
+                        color: Colors.black.withOpacity(.18),
+                        blurRadius: 24,
+                        offset: const Offset(0, 12),
+                      ),
                     ],
                   ),
                   child: ValueListenableBuilder<String>(
@@ -217,13 +269,20 @@ class PacientesListScreen extends StatelessWidget {
                       return ValueListenableBuilder<String>(
                         valueListenable: queryNotifier,
                         builder: (context, query, _) {
-                          final filtrados = pacientes.where((p) {
-                            final coincideEspecie = filtro == "Todas" || p.especie == filtro;
-                            final coincideQuery = query.isEmpty ||
-                                p.nombre.toLowerCase().contains(query.toLowerCase()) ||
-                                p.propietario.nombre.toLowerCase().contains(query.toLowerCase());
-                            return coincideEspecie && coincideQuery;
-                          }).toList();
+                          final filtrados =
+                              pacientes.where((p) {
+                                final coincideEspecie =
+                                    filtro == "Todas" || p.especie == filtro;
+                                final coincideQuery =
+                                    query.isEmpty ||
+                                    p.nombre.toLowerCase().contains(
+                                      query.toLowerCase(),
+                                    ) ||
+                                    p.propietario.nombre.toLowerCase().contains(
+                                      query.toLowerCase(),
+                                    );
+                                return coincideEspecie && coincideQuery;
+                              }).toList();
 
                           return Column(
                             children: [
@@ -232,7 +291,8 @@ class PacientesListScreen extends StatelessWidget {
                                   Expanded(
                                     child: TextField(
                                       decoration: const InputDecoration(
-                                        labelText: "Buscar por nombre o propietario",
+                                        labelText:
+                                            "Buscar por nombre o propietario",
                                       ),
                                       onChanged: (v) => queryNotifier.value = v,
                                     ),
@@ -240,9 +300,15 @@ class PacientesListScreen extends StatelessWidget {
                                   const SizedBox(width: 8),
                                   DropdownButton<String>(
                                     value: filtro,
-                                    items: ["Todas", "Canino", "Felino"]
-                                        .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                                        .toList(),
+                                    items:
+                                        ["Todas", "Canino", "Felino"]
+                                            .map(
+                                              (e) => DropdownMenuItem(
+                                                value: e,
+                                                child: Text(e),
+                                              ),
+                                            )
+                                            .toList(),
                                     onChanged: (v) => filtroNotifier.value = v!,
                                   ),
                                 ],
@@ -256,12 +322,17 @@ class PacientesListScreen extends StatelessWidget {
                                     return Card(
                                       child: ListTile(
                                         title: Text(p.nombre),
-                                        subtitle: Text("${p.especie} / ${p.raza}\n${p.propietario.nombre}"),
+                                        subtitle: Text(
+                                          "${p.especie} / ${p.raza}\n${p.propietario.nombre}",
+                                        ),
                                         onTap: () {
                                           Navigator.push(
                                             context,
                                             MaterialPageRoute(
-                                              builder: (_) => PacienteDetailScreen(paciente: p),
+                                              builder:
+                                                  (_) => PacienteDetailScreen(
+                                                    paciente: p,
+                                                  ),
                                             ),
                                           );
                                         },
@@ -282,6 +353,23 @@ class PacientesListScreen extends StatelessWidget {
           ),
         ),
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const FormularioMascota()),
+          );
+        },
+        backgroundColor: const Color(0xFF2F76A6),
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.pets, size: 28),
+        label: const Text(
+          "Añadir Mascota",
+          style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Roboto'),
+        ),
+        elevation: 6,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
     );
   }
 }
@@ -294,7 +382,8 @@ class PacienteDetailScreen extends StatefulWidget {
   State<PacienteDetailScreen> createState() => _PacienteDetailScreenState();
 }
 
-class _PacienteDetailScreenState extends State<PacienteDetailScreen> with TickerProviderStateMixin {
+class _PacienteDetailScreenState extends State<PacienteDetailScreen>
+    with TickerProviderStateMixin {
   late TabController tabController;
 
   @override
@@ -346,8 +435,14 @@ class _PacienteDetailScreenState extends State<PacienteDetailScreen> with Ticker
           ListTile(title: const Text("Sexo"), subtitle: Text(p.sexo)),
           ListTile(title: const Text("Peso"), subtitle: Text(p.peso)),
           ListTile(title: const Text("Fecha Nac."), subtitle: Text(p.fechaNac)),
-          ListTile(title: const Text("Propietario"), subtitle: Text(p.propietario.nombre)),
-          ListTile(title: const Text("Dirección"), subtitle: Text(p.propietario.direccion)),
+          ListTile(
+            title: const Text("Propietario"),
+            subtitle: Text(p.propietario.nombre),
+          ),
+          ListTile(
+            title: const Text("Dirección"),
+            subtitle: Text(p.propietario.direccion),
+          ),
         ],
       ),
     );
@@ -407,22 +502,33 @@ class _PacienteDetailScreenState extends State<PacienteDetailScreen> with Ticker
             ),
             const SizedBox(height: 16),
             if (selectedDay != null && eventos[selectedDay] != null)
-              ...eventos[selectedDay]!.map((v) => Card(
-                color: Colors.green.shade50,
-                child: ListTile(
-                  title: Text("${v.fecha} - ${v.lote}"),
-                  subtitle: Text("${v.veterinaria} • Adjuntos: ${v.adjuntos}"),
+              ...eventos[selectedDay]!.map(
+                (v) => Card(
+                  color: Colors.green.shade50,
+                  child: ListTile(
+                    title: Text("${v.fecha} - ${v.lote}"),
+                    subtitle: Text(
+                      "${v.veterinaria} • Adjuntos: ${v.adjuntos}",
+                    ),
+                  ),
                 ),
-              )),
-            if (selectedDay != null && (eventos[selectedDay] == null || eventos[selectedDay]!.isEmpty))
+              ),
+            if (selectedDay != null &&
+                (eventos[selectedDay] == null || eventos[selectedDay]!.isEmpty))
               const Padding(
                 padding: EdgeInsets.all(12.0),
-                child: Text("No hay vacunas registradas en este día.", style: TextStyle(color: Colors.grey)),
+                child: Text(
+                  "No hay vacunas registradas en este día.",
+                  style: TextStyle(color: Colors.grey),
+                ),
               ),
             if (selectedDay == null)
               const Padding(
                 padding: EdgeInsets.all(12.0),
-                child: Text("Selecciona un día para ver detalles.", style: TextStyle(color: Colors.grey)),
+                child: Text(
+                  "Selecciona un día para ver detalles.",
+                  style: TextStyle(color: Colors.grey),
+                ),
               ),
           ],
         );
@@ -432,40 +538,60 @@ class _PacienteDetailScreenState extends State<PacienteDetailScreen> with Ticker
 
   int _mesStrToInt(String mes) {
     switch (mes.toLowerCase()) {
-      case 'ene': return 1;
-      case 'feb': return 2;
-      case 'mar': return 3;
-      case 'abr': return 4;
-      case 'may': return 5;
-      case 'jun': return 6;
-      case 'jul': return 7;
-      case 'ago': return 8;
-      case 'sep': return 9;
-      case 'oct': return 10;
-      case 'nov': return 11;
-      case 'dic': return 12;
-      default: return 1;
+      case 'ene':
+        return 1;
+      case 'feb':
+        return 2;
+      case 'mar':
+        return 3;
+      case 'abr':
+        return 4;
+      case 'may':
+        return 5;
+      case 'jun':
+        return 6;
+      case 'jul':
+        return 7;
+      case 'ago':
+        return 8;
+      case 'sep':
+        return 9;
+      case 'oct':
+        return 10;
+      case 'nov':
+        return 11;
+      case 'dic':
+        return 12;
+      default:
+        return 1;
     }
   }
 
   Widget _buildDesparasitaciones(Paciente p) {
-    if (p.desparasitaciones.isEmpty) return _empty("Sin registros de desparasitación");
+    if (p.desparasitaciones.isEmpty)
+      return _empty("Sin registros de desparasitación");
     return ListView(
-      children: p.desparasitaciones
-          .map((d) => ListTile(title: Text("${d.tipo}: ${d.producto}"), subtitle: Text(d.fecha)))
-          .toList(),
+      children:
+          p.desparasitaciones
+              .map(
+                (d) => ListTile(
+                  title: Text("${d.tipo}: ${d.producto}"),
+                  subtitle: Text(d.fecha),
+                ),
+              )
+              .toList(),
     );
   }
 
   Widget _buildHistorial(Paciente p) {
     if (p.historial.isEmpty) return _empty("Sin notas clínicas");
     return ListView(
-      children: p.historial
-          .map((h) => ListTile(
-                title: Text(h.nota),
-                subtitle: Text(h.fecha),
-              ))
-          .toList(),
+      children:
+          p.historial
+              .map(
+                (h) => ListTile(title: Text(h.nota), subtitle: Text(h.fecha)),
+              )
+              .toList(),
     );
   }
 

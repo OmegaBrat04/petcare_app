@@ -26,7 +26,7 @@ class _MenuState extends State<Menu>{
             SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {
-                Navigator.pushNamed(context, '/listaMascotas');
+                Navigator.pushNamed(context, '/PacientesListScreen');
               },
               child: Text('Ver Mascotas'),
             ),

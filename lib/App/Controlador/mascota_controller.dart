@@ -90,4 +90,33 @@ class PetController extends ChangeNotifier {
       rethrow;
     }
   }
+  Future<String?> fetchPets() async {
+    try {
+      final token = await _storage.read(key: 'jwt_token');
+      
+      if (token == null || token.isEmpty) {
+        return "Token no encontrado. Vuelve a iniciar sesión.";
+      }
+
+      //Llamar al API Service para obtener la lista
+      final result = await _apiService.getPets(token: token); 
+
+      if (result['success'] == true) {
+        final List<dynamic> petListJson = result['data'] as List<dynamic>;
+        
+        // Mapear el JSON a la lista de objetos Mascota
+        _pets = petListJson
+            .map((json) => Mascota.fromJson(json as Map<String, dynamic>))
+            .toList();
+        
+        notifyListeners();
+        return null; // Éxito
+      } else {
+        return result['message']?.toString() ?? 'Error al cargar mascotas desde el servidor.';
+      }
+    } catch (e, st) {
+      debugPrint('PetController.fetchPets -> excepción: $e\n$st');
+      return 'Error de conexión o inesperado al obtener mascotas: ${e.toString()}';
+    }
+  }
 }

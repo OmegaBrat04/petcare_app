@@ -116,4 +116,32 @@ class ApiService {
       }
     }
   }
+
+  // ------------------------------ OBTENER MASCOTAS ------------------------------
+  Future<Map<String, dynamic>> getPets({required String token}) async {
+    //Esta ruta debe coincidir con api.routes.js (GET /api/pets)
+    final url = Uri.parse('$_baseUrl/pets');
+
+    final response = await http.get(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        //Envío del Token
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    final responseBody = json.decode(response.body);
+
+    if (response.statusCode == 200) {
+      return {'success': true, 'data': responseBody['data']};
+    } else {
+      // Manejar 401/403 si el token es inválido/expirado
+      return {
+        'success': false,
+        'message':
+            responseBody['message'] ?? 'Error al obtener la lista de mascotas.',
+      };
+    }
+  }
 }

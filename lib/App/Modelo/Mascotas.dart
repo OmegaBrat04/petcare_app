@@ -12,7 +12,7 @@ class Mascota {
 
   Mascota({
     required this.idMascota,
-    required this.idUsuario,
+    required this.idUsuario ,
     required this.nombre,
     required this.especie,
     required this.sexo,

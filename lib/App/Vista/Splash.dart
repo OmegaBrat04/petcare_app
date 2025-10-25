@@ -2,9 +2,17 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:petcare_app/App/Vista/Menu.dart';
+import 'package:petcare_app/App/Vista/formularioMascota.dart';
+import 'package:petcare_app/App/Vista/InfoMascota.dart';
 import 'package:petcare_app/App/Vista/login.dart';
 
-void main() => runApp(const PetCareApp());
+/*void main() => runApp(
+  ChangeNotifierProvider(
+    create: (_) => AuthController(),
+    child: const PetCareApp(),
+  ),
+);*/
 
 class PetCareApp extends StatelessWidget {
   const PetCareApp({super.key});
@@ -13,10 +21,31 @@ class PetCareApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(useMaterial3: true, colorSchemeSeed: const Color(0xFF2F76A6)),
+
+      theme: ThemeData(
+        useMaterial3: true,
+        colorSchemeSeed: const Color(0xFF2F76A6),
+        fontFamily: 'Roboto',
+        inputDecorationTheme: InputDecorationTheme(
+          hintStyle: TextStyle(color: Colors.blueGrey.shade300),
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 14,
+            vertical: 14,
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide.none,
+          ),
+        ),
+      ),
       routes: {
         '/': (_) => const SplashScreen(),
-        '/login': (_) => const PetCareLoginApp(),
+        '/login': (_) => const LoginPawView(),
+        '/menu': (_) => Menu(),
+        '/formularioMascota': (_) => FormularioMascota(),
+        '/PacientesListScreen': (_) => const MascotasListScreen(),
       },
     );
   }
@@ -28,17 +57,29 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
-  late final AnimationController _introCtrl =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 1100))..forward();
-  late final Animation<double> _fadeIn = CurvedAnimation(parent: _introCtrl, curve: Curves.easeOutCubic);
-  late final Animation<double> _scaleIn = Tween(begin: .93, end: 1.0)
-      .animate(CurvedAnimation(parent: _introCtrl, curve: Curves.easeOutBack));
+class _SplashScreenState extends State<SplashScreen>
+    with TickerProviderStateMixin {
+  late final AnimationController _introCtrl = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1100),
+  )..forward();
+  late final Animation<double> _fadeIn = CurvedAnimation(
+    parent: _introCtrl,
+    curve: Curves.easeOutCubic,
+  );
+  late final Animation<double> _scaleIn = Tween(
+    begin: .93,
+    end: 1.0,
+  ).animate(CurvedAnimation(parent: _introCtrl, curve: Curves.easeOutBack));
 
-  late final AnimationController _rotateCtrl =
-      AnimationController(vsync: this, duration: const Duration(seconds: 18))..repeat();
-  late final AnimationController _shimmerCtrl =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 2400))..repeat();
+  late final AnimationController _rotateCtrl = AnimationController(
+    vsync: this,
+    duration: const Duration(seconds: 18),
+  )..repeat();
+  late final AnimationController _shimmerCtrl = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 2400),
+  )..repeat();
 
   Timer? _timer;
 
@@ -46,12 +87,14 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   void initState() {
     super.initState();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      systemNavigationBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
-      systemNavigationBarIconBrightness: Brightness.light,
-    ));
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        systemNavigationBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        systemNavigationBarIconBrightness: Brightness.light,
+      ),
+    );
     _timer = Timer(const Duration(seconds: 5), _goLogin);
   }
 
@@ -72,107 +115,188 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: LayoutBuilder(builder: (context, c) {
-        return Stack(
-          fit: StackFit.expand,
-          children: [
-            const _GradientBackground(),
+      body: LayoutBuilder(
+        builder: (context, c) {
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              const _GradientBackground(),
 
-            // Blobs girando
-            AnimatedBuilder(
-              animation: _rotateCtrl,
-              builder: (_, __) {
-                final t = _rotateCtrl.value;
-                return Stack(children: [
-                  Positioned(
-                    top: -100,
-                    right: -80,
-                    child: Transform.rotate(
-                      angle: t * 2 * math.pi * .25,
-                      child: const _Blob(size: 260, asset: 'assets/images/blob.png', opacity: .22),
-                    ),
+              // Blobs girando
+              AnimatedBuilder(
+                animation: _rotateCtrl,
+                builder: (_, __) {
+                  final t = _rotateCtrl.value;
+                  return Stack(
+                    children: [
+                      Positioned(
+                        top: -100,
+                        right: -80,
+                        child: Transform.rotate(
+                          angle: t * 2 * math.pi * .25,
+                          child: const _Blob(
+                            size: 260,
+                            asset: 'assets/images/blob.png',
+                            opacity: .22,
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        bottom: -80,
+                        left: -60,
+                        child: Transform.rotate(
+                          angle: -t * 2 * math.pi * .2,
+                          child: const _Blob(
+                            size: 220,
+                            asset: 'assets/images/blob.png',
+                            opacity: .18,
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+
+              // Huellas con shimmer
+              AnimatedBuilder(
+                animation: _shimmerCtrl,
+                builder:
+                    (_, __) => _ShimmerPawOverlay(phase: _shimmerCtrl.value),
+              ),
+
+              // Contenido
+              SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 28,
+                    vertical: 24,
                   ),
-                  Positioned(
-                    bottom: -80,
-                    left: -60,
-                    child: Transform.rotate(
-                      angle: -t * 2 * math.pi * .2,
-                      child: const _Blob(size: 220, asset: 'assets/images/blob.png', opacity: .18),
-                    ),
-                  ),
-                ]);
-              },
-            ),
+                  child: Column(
+                    children: [
+                      const Spacer(),
 
-            // Huellas con shimmer
-            AnimatedBuilder(
-              animation: _shimmerCtrl,
-              builder: (_, __) => _ShimmerPawOverlay(phase: _shimmerCtrl.value),
-            ),
-
-            // Contenido
-            SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
-                child: Column(
-                  children: [
-                    const Spacer(),
-
-                    ScaleTransition(
-                      scale: _scaleIn,
-                      child: FadeTransition(
-                        opacity: _fadeIn,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            // brillo suave detrás
-                            Container(
-                              width: c.maxWidth * 0.68,
-                              height: c.maxWidth * 0.68,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: RadialGradient(
-                                  colors: [
-                                    Colors.white.withOpacity(.35),
-                                    Colors.white.withOpacity(.06),
-                                  ],
-                                  stops: const [.0, 1.0],
+                      ScaleTransition(
+                        scale: _scaleIn,
+                        child: FadeTransition(
+                          opacity: _fadeIn,
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              // brillo suave detrás
+                              Container(
+                                width: c.maxWidth * 0.68,
+                                height: c.maxWidth * 0.68,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: RadialGradient(
+                                    colors: [
+                                      Colors.white.withOpacity(.35),
+                                      Colors.white.withOpacity(.06),
+                                    ],
+                                    stops: const [.0, 1.0],
+                                  ),
                                 ),
                               ),
-                            ),
-                            // Blob de fondo
-                            Transform.scale(
-                              scale: 1.15,
-                              child: Image.asset(
-                                'assets/images/blob.png',
-                                width: c.maxWidth * 0.9,
-                                height: c.maxWidth * 0.9,
-                                color: Colors.white.withOpacity(0.18),
-                                fit: BoxFit.contain,
+                              // Blob de fondo
+                              Transform.scale(
+                                scale: 1.15,
+                                child: Image.asset(
+                                  'assets/images/blob.png',
+                                  width: c.maxWidth * 0.9,
+                                  height: c.maxWidth * 0.9,
+                                  color: Colors.white.withOpacity(0.18),
+                                  fit: BoxFit.contain,
+                                ),
                               ),
-                            ),
-                            Container(
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(.28),
-                                    blurRadius: 20,
-                                    offset: const Offset(0, 10),
-                                  ),
-                                ],
-                              ),
-                              child: ClipPath(
-                                clipper: _TopBiasedCircleClipper(bias: -0.10),
-                                child: SizedBox(
-                                  width: c.maxWidth * 0.58,
-                                  height: c.maxWidth * 0.58,
-                                  child: FittedBox(
-                                    fit: BoxFit.cover,
-                                    child: Image.asset(
-                                      'assets/images/dog.png',
-                                      filterQuality: FilterQuality.high,
+                              Container(
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(.28),
+                                      blurRadius: 20,
+                                      offset: const Offset(0, 10),
                                     ),
+                                  ],
+                                ),
+                                child: ClipPath(
+                                  clipper: _TopBiasedCircleClipper(bias: -0.10),
+                                  child: SizedBox(
+                                    width: c.maxWidth * 0.58,
+                                    height: c.maxWidth * 0.58,
+                                    child: FittedBox(
+                                      fit: BoxFit.cover,
+                                      child: Image.asset(
+                                        'assets/images/dog.png',
+                                        filterQuality: FilterQuality.high,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 70),
+
+                      // Logo + texto
+                      FadeTransition(
+                        opacity: _fadeIn,
+                        child: Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Hero(
+                                  tag: 'petcare_logo',
+                                  child: Image.asset(
+                                    'assets/images/logo.png',
+                                    height: 80,
+                                    fit: BoxFit.contain,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'PetCare',
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.headlineSmall?.copyWith(
+                                        fontWeight: FontWeight.w800,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Manager',
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.titleMedium?.copyWith(
+                                        color: Colors.lightBlue.shade100,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 26),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: SizedBox(
+                                height: 8,
+                                width: 200,
+                                child: LinearProgressIndicator(
+                                  minHeight: 8,
+                                  backgroundColor: Colors.white.withOpacity(
+                                    .25,
+                                  ),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.white.withOpacity(.95),
                                   ),
                                 ),
                               ),
@@ -180,69 +304,16 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                           ],
                         ),
                       ),
-                    ),
 
-                    const SizedBox(height: 70),
-
-                    // Logo + texto
-                    FadeTransition(
-                      opacity: _fadeIn,
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Hero(
-                                tag: 'petcare_logo',
-                                child: Image.asset('assets/images/logo.png', height: 80, fit: BoxFit.contain),
-                              ),
-                              const SizedBox(width: 12),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'PetCare',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .headlineSmall
-                                        ?.copyWith(fontWeight: FontWeight.w800, color: Colors.white),
-                                  ),
-                                  Text(
-                                    'Manager',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleMedium
-                                        ?.copyWith(color: Colors.lightBlue.shade100, fontWeight: FontWeight.w700),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 26),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
-                            child: SizedBox(
-                              height: 8,
-                              width: 200,
-                              child: LinearProgressIndicator(
-                                minHeight: 8,
-                                backgroundColor: Colors.white.withOpacity(.25),
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white.withOpacity(.95)),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const Spacer(),
-                  ],
+                      const Spacer(),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
-        );
-      }),
+            ],
+          );
+        },
+      ),
     );
   }
 }
@@ -259,7 +330,8 @@ class _TopBiasedCircleClipper extends CustomClipper<Path> {
   }
 
   @override
-  bool shouldReclip(covariant _TopBiasedCircleClipper oldClipper) => oldClipper.bias != bias;
+  bool shouldReclip(covariant _TopBiasedCircleClipper oldClipper) =>
+      oldClipper.bias != bias;
 }
 
 class _GradientBackground extends StatelessWidget {
@@ -279,7 +351,9 @@ class _GradientBackground extends StatelessWidget {
 }
 
 class _Blob extends StatelessWidget {
-  final double size; final String asset; final double opacity;
+  final double size;
+  final String asset;
+  final double opacity;
   const _Blob({required this.size, required this.asset, this.opacity = .3});
   @override
   Widget build(BuildContext context) {
@@ -314,13 +388,23 @@ class _ShimmerPawOverlay extends StatelessWidget {
 }
 
 class _PawPattern extends StatelessWidget {
-  final double opacity; final double density; final double baseSize;
-  const _PawPattern({this.opacity = .08, this.density = 1.0, this.baseSize = 42});
+  final double opacity;
+  final double density;
+  final double baseSize;
+  const _PawPattern({
+    this.opacity = .08,
+    this.density = 1.0,
+    this.baseSize = 42,
+  });
   @override
   Widget build(BuildContext context) {
     return IgnorePointer(
       child: CustomPaint(
-        painter: _PawPainter(opacity: opacity, density: density, baseSize: baseSize),
+        painter: _PawPainter(
+          opacity: opacity,
+          density: density,
+          baseSize: baseSize,
+        ),
         child: const SizedBox.expand(),
       ),
     );
@@ -328,8 +412,14 @@ class _PawPattern extends StatelessWidget {
 }
 
 class _PawPainter extends CustomPainter {
-  final double opacity; final double density; final double baseSize;
-  _PawPainter({required this.opacity, required this.density, required this.baseSize});
+  final double opacity;
+  final double density;
+  final double baseSize;
+  _PawPainter({
+    required this.opacity,
+    required this.density,
+    required this.baseSize,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -357,14 +447,24 @@ class _PawPainter extends CustomPainter {
     }
   }
 
-  void _drawPaw(Canvas canvas, Offset center, double size, double angle, Color color) {
+  void _drawPaw(
+    Canvas canvas,
+    Offset center,
+    double size,
+    double angle,
+    Color color,
+  ) {
     final pawPath = Path();
-    final paint = Paint()
-      ..style = PaintingStyle.fill
-      ..shader = RadialGradient(
-        colors: [color.withOpacity(color.opacity * 1.0), color.withOpacity(color.opacity * .6)],
-        stops: const [0.2, 1.0],
-      ).createShader(Rect.fromCircle(center: center, radius: size));
+    final paint =
+        Paint()
+          ..style = PaintingStyle.fill
+          ..shader = RadialGradient(
+            colors: [
+              color.withOpacity(color.opacity * 1.0),
+              color.withOpacity(color.opacity * .6),
+            ],
+            stops: const [0.2, 1.0],
+          ).createShader(Rect.fromCircle(center: center, radius: size));
 
     canvas.save();
     canvas.translate(center.dx, center.dy);
@@ -373,8 +473,14 @@ class _PawPainter extends CustomPainter {
     final padW = size * .9, padH = size * .65;
     final toeR = size * .18;
 
-    final rect = Rect.fromCenter(center: Offset(0, 0), width: padW, height: padH);
-    pawPath.addRRect(RRect.fromRectAndRadius(rect, Radius.circular(size * .28)));
+    final rect = Rect.fromCenter(
+      center: Offset(0, 0),
+      width: padW,
+      height: padH,
+    );
+    pawPath.addRRect(
+      RRect.fromRectAndRadius(rect, Radius.circular(size * .28)),
+    );
 
     final toes = <Offset>[
       Offset(-padW * .28, -padH * .55),
@@ -386,11 +492,15 @@ class _PawPainter extends CustomPainter {
     canvas.drawShadow(pawPath, Colors.black.withOpacity(.10), 4.0, false);
     canvas.drawPath(pawPath, paint);
 
-    final toePaint = Paint()
-      ..style = PaintingStyle.fill
-      ..shader = RadialGradient(
-        colors: [color.withOpacity(color.opacity * 1.0), color.withOpacity(color.opacity * .65)],
-      ).createShader(Rect.fromCircle(center: Offset.zero, radius: toeR));
+    final toePaint =
+        Paint()
+          ..style = PaintingStyle.fill
+          ..shader = RadialGradient(
+            colors: [
+              color.withOpacity(color.opacity * 1.0),
+              color.withOpacity(color.opacity * .65),
+            ],
+          ).createShader(Rect.fromCircle(center: Offset.zero, radius: toeR));
 
     for (final o in toes) {
       canvas.drawCircle(o, toeR, toePaint);
@@ -401,5 +511,7 @@ class _PawPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _PawPainter old) =>
-      old.opacity != opacity || old.density != density || old.baseSize != baseSize;
+      old.opacity != opacity ||
+      old.density != density ||
+      old.baseSize != baseSize;
 }

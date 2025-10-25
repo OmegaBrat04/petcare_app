@@ -158,10 +158,11 @@ class _FormularioMascotaState extends State<FormularioMascota> {
         Navigator.of(context).pop(true);
       }
     } else {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(errorMessage)));
+      }
     }
   }
 
@@ -337,7 +338,7 @@ class _FormularioMascotaState extends State<FormularioMascota> {
                         ),
                         const SizedBox(height: 16),
                         DropdownButtonFormField<String>(
-                          value: especie,
+                          initialValue: especie,
                           decoration: const InputDecoration(
                             labelText: 'Especie',
                           ),
@@ -363,7 +364,7 @@ class _FormularioMascotaState extends State<FormularioMascota> {
                         ),
                         const SizedBox(height: 16),
                         DropdownButtonFormField<String>(
-                          value: sexo,
+                          initialValue: sexo,
                           decoration: const InputDecoration(labelText: 'Sexo'),
                           items:
                               ['M', 'H']

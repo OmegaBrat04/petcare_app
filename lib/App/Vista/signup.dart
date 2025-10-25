@@ -218,8 +218,9 @@ class _SignUpPawViewState extends State<SignUpPawView>
             validator: (v) {
               if (v == null || v.trim().isEmpty) return 'Ingresa tu correo';
               final emailRx = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
-              if (!emailRx.hasMatch(v.trim()))
+              if (!emailRx.hasMatch(v.trim())) {
                 return 'Formato de correo inválido';
+              }
               return null;
             },
           ),

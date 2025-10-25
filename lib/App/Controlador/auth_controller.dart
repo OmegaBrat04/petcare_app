@@ -28,8 +28,9 @@ class AuthController extends ChangeNotifier {
         final userMap = result['user'] as Map<String, dynamic>?;
 
         if (token == null) return 'Token no recibido desde el servidor.';
-        if (userMap == null)
+        if (userMap == null) {
           return 'Datos de usuario no recibidos desde el servidor.';
+        }
 
         // Comprobar explícita de existencia de Id en varias formas
         final idKeys = ['IdUsuario', 'idUsuario', 'id', 'Id'];

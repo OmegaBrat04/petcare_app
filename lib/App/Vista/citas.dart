@@ -28,13 +28,7 @@ class CitasPage extends StatelessWidget {
         backgroundColor: _kBg,
         foregroundColor: Colors.black87,
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: _kPrimary,
-        foregroundColor: Colors.white,
-        onPressed: () => _toast(context, 'Nueva cita (UI demo)'),
-        icon: const Icon(Icons.add),
-        label: const Text('Nueva cita'),
-      ),
+      
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
         children: const [
@@ -428,7 +422,7 @@ class _ApptCardStatic extends StatelessWidget {
                       const SizedBox(height: 8),
                       Row(children: [
                         _StatusChip(label: data.status, color: data.statusColor),
-                        const SizedBox(width: 6),
+                        const SizedBox(width: 3),
                         TextButton.icon(
                           onPressed: () => _toast(context, 'Indicaciones (UI demo)'),
                           icon: const Icon(Icons.article_outlined, size: 18),

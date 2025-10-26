@@ -3,36 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:petcare_app/App/Vista/citas.dart';
 import 'package:petcare_app/App/Vista/geolocalizador.dart';
+import 'package:petcare_app/App/Vista/InfoMascota.dart';
 
-void main() {
-  WidgetsFlutterBinding.ensureInitialized();
+/*WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
     statusBarIconBrightness: Brightness.light,
     statusBarBrightness: Brightness.dark,
     systemNavigationBarColor: Colors.white,
-    systemNavigationBarIconBrightness: Brightness.dark,
-  ));
-  runApp(const PetCareApp());
-}
-
-class PetCareApp extends StatelessWidget {
-  const PetCareApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'PetCare App (UI only)',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        fontFamily: 'Roboto',
-        colorSchemeSeed: const Color(0xFF2F76A6),
-      ),
-      home: const HomeShell(),
-    );
-  }
-}
+    systemNavigationBarIconBrightness: Brightness.dark,*/
 
 const _kPrimary = Color(0xFF2F76A6);
 const _kPrimaryDark = Color(0xFF0E3A5C);
@@ -67,22 +46,14 @@ class _HomeShellState extends State<HomeShell> {
     _ModuleDef('Citas', Icons.event_available, const SizedBox.shrink()),
   ];
 
-  int _index = 1; // Arranca en Veterinarias
+  //int _index = 1; // Arranca en Veterinarias
+  int _index = 0;
   final TextEditingController _searchCtrl = TextEditingController();
   String _query = '';
 
   @override
   void initState() {
     super.initState();
-    // Abre geolocalizador al iniciar si estás en tab 1
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      if (_index == 1) {
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const GeolocalizadorPage()),
-        );
-      }
-    });
   }
 
   @override
@@ -94,18 +65,21 @@ class _HomeShellState extends State<HomeShell> {
   void _onNavSelected(int i) {
     if (i == 0) {
       Navigator.of(context).pushNamed('/mascotas');
-      return; 
+      Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (_) => const MascotasListScreen()));
+      return;
     }
     if (i == 1) {
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const GeolocalizadorPage()),
-      );
+      Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (_) => const GeolocalizadorPage()));
       return;
     }
     if (i == 2) {
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const CitasPage()),
-      );
+      Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (_) => const CitasPage()));
       return;
     }
     setState(() => _index = i);
@@ -130,30 +104,31 @@ class _HomeShellState extends State<HomeShell> {
           SafeArea(
             bottom: false,
             child: NestedScrollView(
-              headerSliverBuilder: (context, _) => [
-                const SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-                    child: _GlassHeader(),
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                    child: _SearchBarWhite(
-                      controller: _searchCtrl,
-                      hintText: 'Buscar mascotas, citas, veterinarias…',
-                      onChanged: (t) => setState(() => _query = t),
-                      onClear: () {
-                        _searchCtrl.clear();
-                        setState(() => _query = '');
-                      },
-                      onSubmitted: (_) {},
+              headerSliverBuilder:
+                  (context, _) => [
+                    const SliverToBoxAdapter(
+                      child: Padding(
+                        padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+                        child: _GlassHeader(),
+                      ),
                     ),
-                  ),
-                ),
-                const SliverToBoxAdapter(child: SizedBox(height: 8)),
-              ],
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                        child: _SearchBarWhite(
+                          controller: _searchCtrl,
+                          hintText: 'Buscar mascotas, citas, veterinarias…',
+                          onChanged: (t) => setState(() => _query = t),
+                          onClear: () {
+                            _searchCtrl.clear();
+                            setState(() => _query = '');
+                          },
+                          onSubmitted: (_) {},
+                        ),
+                      ),
+                    ),
+                    const SliverToBoxAdapter(child: SizedBox(height: 8)),
+                  ],
               body: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 250),
                 child: Container(
@@ -203,13 +178,16 @@ class _HomeShellState extends State<HomeShell> {
                 child: NavigationBar(
                   selectedIndex: _index,
                   onDestinationSelected: _onNavSelected,
-                  destinations: _modules
-                      .map((m) => NavigationDestination(
-                            icon: Icon(m.icon, color: _kPrimaryDark),
-                            selectedIcon: Icon(m.icon, color: _kPrimaryDark),
-                            label: m.label,
-                          ))
-                      .toList(),
+                  destinations:
+                      _modules
+                          .map(
+                            (m) => NavigationDestination(
+                              icon: Icon(m.icon, color: _kPrimaryDark),
+                              selectedIcon: Icon(m.icon, color: _kPrimaryDark),
+                              label: m.label,
+                            ),
+                          )
+                          .toList(),
                 ),
               ),
             ),
@@ -244,7 +222,7 @@ class _GlassHeader extends StatelessWidget {
                   color: Colors.black.withOpacity(.08),
                   blurRadius: 10,
                   offset: const Offset(0, 6),
-                )
+                ),
               ],
             ),
             child: ClipOval(
@@ -266,17 +244,24 @@ class _GlassHeader extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Bienvenido a',
-                    style: TextStyle(
-                        color: Colors.white70, fontWeight: FontWeight.w500)),
+                Text(
+                  'Bienvenido a',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
                 SizedBox(height: 2),
-                Text('PetCare',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800)),
+                Text(
+                  'PetCare',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
               ],
             ),
           ),
@@ -327,7 +312,7 @@ class _SearchBarWhite extends StatelessWidget {
             color: Colors.black.withOpacity(.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
-          )
+          ),
         ],
       ),
       child: Row(
@@ -341,7 +326,9 @@ class _SearchBarWhite extends StatelessWidget {
               onChanged: onChanged,
               onSubmitted: onSubmitted,
               style: const TextStyle(
-                  color: Colors.black87, fontWeight: FontWeight.w600),
+                color: Colors.black87,
+                fontWeight: FontWeight.w600,
+              ),
               cursorColor: Colors.black87,
               decoration: const InputDecoration(
                 hintText: 'Buscar mascotas, citas, veterinarias…',
@@ -354,13 +341,18 @@ class _SearchBarWhite extends StatelessWidget {
           ),
           ValueListenableBuilder<TextEditingValue>(
             valueListenable: controller,
-            builder: (_, value, __) => value.text.isEmpty
-                ? const SizedBox(width: 8)
-                : IconButton(
-                    onPressed: onClear,
-                    icon: const Icon(Icons.close_rounded, color: Colors.blueGrey),
-                    splashRadius: 18,
-                  ),
+            builder:
+                (_, value, __) =>
+                    value.text.isEmpty
+                        ? const SizedBox(width: 8)
+                        : IconButton(
+                          onPressed: onClear,
+                          icon: const Icon(
+                            Icons.close_rounded,
+                            color: Colors.blueGrey,
+                          ),
+                          splashRadius: 18,
+                        ),
           ),
         ],
       ),
@@ -376,7 +368,11 @@ class _RedirectTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: ElevatedButton.icon(
-        onPressed: () => Navigator.of(context).pushNamed(routeName),
+        onPressed: () {
+          Navigator.of(
+            context,
+          ).push(MaterialPageRoute(builder: (_) => const MascotasListScreen()));
+        },
         icon: const Icon(Icons.pets),
         label: const Text('Abrir Mascotas'),
       ),

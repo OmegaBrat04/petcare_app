@@ -3,15 +3,19 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:petcare_app/App/Controlador/auth_controller.dart';
-import 'package:petcare_app/App/Vista/Menu.dart';
+import 'package:petcare_app/App/Controlador/mascota_controller.dart';
 import 'package:petcare_app/App/Vista/formularioMascota.dart';
 import 'package:petcare_app/App/Vista/InfoMascota.dart';
 import 'package:petcare_app/App/Vista/login.dart';
 import 'package:provider/provider.dart';
+import 'package:petcare_app/App/Vista/HomeMenu.dart';
 
 /*void main() => runApp(
-  ChangeNotifierProvider(
-    create: (_) => AuthController(),
+ MultiProvider(
+    providers: [
+      ChangeNotifierProvider(create: (_) => AuthController()),
+      ChangeNotifierProvider(create: (_) => PetController()),
+    ],
     child: const PetCareApp(),
   ),
 );*/
@@ -45,9 +49,9 @@ class PetCareApp extends StatelessWidget {
       routes: {
         '/': (_) => const SplashScreen(),
         '/login': (_) => const LoginPawView(),
-        '/menu': (_) => Menu(),
-        '/formularioMascota': (_) => FormularioMascota(),
-        '/PacientesListScreen': (_) => const MascotasListScreen(),
+        '/menu': (_) => HomeShell(),
+        '/mascotas': (_) => const MascotasListScreen(),
+        
       },
     );
   }

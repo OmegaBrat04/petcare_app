@@ -1,9 +1,12 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:petcare_app/App/Controlador/auth_controller.dart';
 import 'package:petcare_app/App/Vista/citas.dart';
 import 'package:petcare_app/App/Vista/geolocalizador.dart';
 import 'package:petcare_app/App/Vista/InfoMascota.dart';
+import 'package:petcare_app/App/Vista/login.dart';
+import 'package:provider/provider.dart';
 
 /*WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
@@ -26,6 +29,59 @@ void _comingSoon(BuildContext context) {
   );
 }
 
+Future<void> _showAccountMenu(BuildContext context) async {
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.transparent,
+    isScrollControlled: true,
+    builder: (ctx) {
+      return Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        padding: EdgeInsets.only(
+          top: 12,
+          bottom: 16 + MediaQuery.of(ctx).viewPadding.bottom,
+          left: 8,
+          right: 8,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 48,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.black26,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 12),
+            ListTile(
+              leading: const Icon(Icons.logout, color: _kPrimaryDark),
+              title: const Text('Cerrar sesión'),
+              onTap: () async {
+                Navigator.of(ctx).pop();
+
+                try {
+                  await Provider.of<AuthController>(
+                    context,
+                    listen: false,
+                  ).logout();
+                } catch (_) {
+                }
+                Navigator.of(context).pushReplacementNamed('/login');
+              },
+            ),
+            // Más opciones se pueden agregar aquí
+          ],
+        ),
+      );
+    },
+  );
+}
+
 class _ModuleDef {
   final String label;
   final IconData icon;
@@ -41,7 +97,7 @@ class HomeShell extends StatefulWidget {
 
 class _HomeShellState extends State<HomeShell> {
   late final List<_ModuleDef> _modules = [
-    _ModuleDef('Mascotas', Icons.pets, const _RedirectTab('/mascotas')),
+    _ModuleDef('Mascotas', Icons.pets, const SizedBox.shrink()),
     _ModuleDef('Veterinarias', Icons.map, const SizedBox.shrink()),
     _ModuleDef('Citas', Icons.event_available, const SizedBox.shrink()),
   ];
@@ -64,7 +120,6 @@ class _HomeShellState extends State<HomeShell> {
 
   void _onNavSelected(int i) {
     if (i == 0) {
-      Navigator.of(context).pushNamed('/mascotas');
       Navigator.of(
         context,
       ).push(MaterialPageRoute(builder: (_) => const MascotasListScreen()));
@@ -136,8 +191,7 @@ class _HomeShellState extends State<HomeShell> {
                   padding: const EdgeInsets.fromLTRB(12, 6, 12, 24),
                   child: IndexedStack(
                     index: _index,
-                    // ahora solo hay contenido para Mascotas (redirect);
-                    // Veterinarias y Citas están vacíos porque se abren con push
+
                     children: _modules.map((m) => m.page).toList(),
                   ),
                 ),
@@ -270,7 +324,7 @@ class _GlassHeader extends StatelessWidget {
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
             child: InkWell(
-              onTap: () => _comingSoon(context),
+              onTap: () => _showAccountMenu(context),
               borderRadius: BorderRadius.circular(12),
               child: const Padding(
                 padding: EdgeInsets.all(8.0),
@@ -355,26 +409,6 @@ class _SearchBarWhite extends StatelessWidget {
                         ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _RedirectTab extends StatelessWidget {
-  final String routeName;
-  const _RedirectTab(this.routeName, {super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: ElevatedButton.icon(
-        onPressed: () {
-          Navigator.of(
-            context,
-          ).push(MaterialPageRoute(builder: (_) => const MascotasListScreen()));
-        },
-        icon: const Icon(Icons.pets),
-        label: const Text('Abrir Mascotas'),
       ),
     );
   }

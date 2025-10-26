@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 
 const _kPrimary = Color(0xFF2F76A6);
 const _kPrimaryDark = Color(0xFF0E3A5C);
@@ -41,20 +43,20 @@ class _GeolocalizadorPageState extends State<GeolocalizadorPage> {
     (
       name: 'Vet Centro Norte',
       address: 'Av. Los Olivos 123',
-      meta: 'L–S 8:00–20:00 • Consulta, Vacunas, Rayos X',
-      tags: ['Consulta', 'Vacunas', 'Rayos X'],
+      meta: 'L–S 8:00–20:00 • Consulta, Control de Salud, Rayos X',
+      tags: ['Consultas', 'Vacunas', 'Cirugias', 'Desparasitaciones'],
     ),
     (
       name: 'Clínica Mascotitas',
       address: 'Calle Sol 45',
-      meta: 'L–V 9:00–18:00 • Consulta, Cirugía',
-      tags: ['Consulta', 'Cirugía'],
+      meta: 'L–V 9:00–18:00 • Consulta, Cuidado Animal',
+      tags: ['Consulta', 'Baños',' Peluquería'],
     ),
     (
       name: 'Vet Express',
       address: 'Jr. Lima 780',
-      meta: '24h • Urgencias, Hospitalización, Eco',
-      tags: ['24h', 'Urgencias', 'Eco'],
+      meta: '24h • Urgencias, Atencion Inmediata, Eco',
+      tags: ['Consultas', 'Cirugias', 'Eco'],
     ),
   ];
 
@@ -215,7 +217,6 @@ class _GeolocalizadorPageState extends State<GeolocalizadorPage> {
                       key: const ValueKey('list'),
                       clinics: _clinics,
                       onOpen: _openClinicSheet,
-                      onCall: (n) => _toast('Llamando a $n…'),
                       onRoute: (n) => _focusClinic(n),
                       onTapCard: (n) => _focusClinic(n),
                     ),
@@ -243,7 +244,7 @@ class _GeolocalizadorPageState extends State<GeolocalizadorPage> {
                     onSubmitted: (_) => _toast('Buscar: ${_searchCtrl.text}'),
                   ),
                   const SizedBox(height: 10),
-                  _FiltersRow(active: _activeFilters, onTap: _toggleFilter),
+                 // _FiltersRow(active: _activeFilters, onTap: _toggleFilter),
                 ],
               ),
             ),
@@ -258,7 +259,6 @@ class _GeolocalizadorPageState extends State<GeolocalizadorPage> {
                   _focusClinic(c.name);
                   _openClinicSheet(c);
                 },
-                onCall: (n) => _toast('Llamando a $n…'),
                 onRoute: (n) {
                   _focusClinic(n);
                   _toast('Trazando ruta hacia $n…');
@@ -373,9 +373,12 @@ class _GeolocalizadorPageState extends State<GeolocalizadorPage> {
                   children: [
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: () => _toast('Llamando…'),
-                        icon: const Icon(Icons.call),
-                        label: const Text('Llamar'),
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _showAgendarCitaForm(c);
+                        },
+                        icon: const Icon(Icons.event_available),
+                        label: const Text('Agendar cita'),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -400,6 +403,258 @@ class _GeolocalizadorPageState extends State<GeolocalizadorPage> {
       },
     );
   }
+
+  void _showAgendarCitaForm(
+    ({String name, String address, String meta, List<String> tags}) clinic,
+  ) {
+    final mascotaController = TextEditingController();
+    final telefonoController = TextEditingController();
+    final motivoController = TextEditingController();
+    DateTime? fechaSeleccionada;
+    String? servicioSeleccionado;
+
+    // Servicios ejemplo (vendrían de la veterinaria)
+    final servicios = clinic.tags;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.85,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+              ),
+              child: Column(
+                children: [
+                  // Header
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: _kPrimary.withOpacity(0.1),
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(22),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.pets, color: _kPrimaryDark),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Agendar Cita',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: _kPrimaryDark,
+                                ),
+                              ),
+                              Text(
+                                clinic.name,
+                                style: TextStyle(
+                                  color: _kPrimaryDark.withOpacity(0.7),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.pop(context),
+                          color: _kPrimaryDark,
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Formulario
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Nombre de la mascota
+                          _FormField(
+                            title: 'Mascota',
+                            child: TextField(
+                              controller: mascotaController,
+                              decoration: const InputDecoration(
+                                hintText: 'Nombre de su mascota',
+                                prefixIcon: Icon(Icons.pets),
+                                border: OutlineInputBorder(),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Servicio requerido
+                          _FormField(
+                            title: 'Servicio requerido',
+                            child: DropdownButtonFormField<String>(
+                              value: servicioSeleccionado,
+                              decoration: const InputDecoration(
+                                prefixIcon: Icon(Icons.medical_services),
+                                border: OutlineInputBorder(),
+                              ),
+                              hint: const Text('Seleccione el servicio'),
+                              items:
+                                  servicios.map((String value) {
+                                    return DropdownMenuItem<String>(
+                                      value: value,
+                                      child: Text(value),
+                                    );
+                                  }).toList(),
+                              onChanged: (val) {
+                                setState(() => servicioSeleccionado = val);
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Fecha
+                          _FormField(
+                            title: 'Fecha preferida',
+                            child: InkWell(
+                              onTap: () async {
+                                final fecha = await showDatePicker(
+                                  context: context,
+                                  initialDate: DateTime.now().add(
+                                    const Duration(days: 1),
+                                  ),
+                                  firstDate: DateTime.now(),
+                                  lastDate: DateTime.now().add(
+                                    const Duration(days: 30),
+                                  ),
+                                  builder: (context, child) {
+                                    return Theme(
+                                      data: Theme.of(context).copyWith(
+                                        colorScheme: ColorScheme.light(
+                                          primary: _kPrimary,
+                                          onPrimary: Colors.white,
+                                          surface: Colors.white,
+                                          onSurface: _kPrimaryDark,
+                                        ),
+                                      ),
+                                      child: child!,
+                                    );
+                                  },
+                                );
+                                if (fecha != null) {
+                                  setState(() => fechaSeleccionada = fecha);
+                                }
+                              },
+                              child: InputDecorator(
+                                decoration: const InputDecoration(
+                                  prefixIcon: Icon(Icons.calendar_today),
+                                  border: OutlineInputBorder(),
+                                ),
+                                child: Text(
+                                  fechaSeleccionada == null
+                                      ? 'Seleccione una fecha'
+                                      : DateFormat(
+                                        'EEEE d MMMM, y',
+                                        'es',
+                                      ).format(fechaSeleccionada!),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Teléfono
+                          _FormField(
+                            title: 'Teléfono de contacto',
+                            child: TextField(
+                              controller: telefonoController,
+                              decoration: const InputDecoration(
+                                hintText: '(999) 999-9999',
+                                prefixIcon: Icon(Icons.phone),
+                                border: OutlineInputBorder(),
+                              ),
+                              keyboardType: TextInputType.phone,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Motivo
+                          _FormField(
+                            title: 'Motivo de la consulta',
+                            child: TextField(
+                              controller: motivoController,
+                              maxLines: 3,
+                              decoration: const InputDecoration(
+                                hintText: 'Describa el motivo de su visita...',
+                                border: OutlineInputBorder(),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // Botón de enviar
+                  Container(
+                    padding: EdgeInsets.fromLTRB(
+                      16,
+                      16,
+                      16,
+                      16 + MediaQuery.of(context).padding.bottom,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, -5),
+                        ),
+                      ],
+                    ),
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _kPrimary,
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size.fromHeight(50),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: () {
+                        // Aquí iría la lógica de envío
+                        Navigator.pop(context);
+                        _toast(
+                          'Solicitud enviada. La clínica confirmará el horario.',
+                        );
+                      },
+                      child: const Text(
+                        'Solicitar Cita',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
 }
 
 // ============================ SUBWIDGETS / UI ============================
@@ -411,7 +666,6 @@ class _FullScreenList extends StatelessWidget {
     ({String name, String address, String meta, List<String> tags}),
   )
   onOpen;
-  final void Function(String) onCall;
   final void Function(String) onRoute;
   final void Function(String) onTapCard;
 
@@ -419,7 +673,6 @@ class _FullScreenList extends StatelessWidget {
     super.key,
     required this.clinics,
     required this.onOpen,
-    required this.onCall,
     required this.onRoute,
     required this.onTapCard,
   });
@@ -438,7 +691,6 @@ class _FullScreenList extends StatelessWidget {
           meta: c.meta,
           tags: c.tags,
           onOpen: () => onOpen(c),
-          onCall: () => onCall(c.name),
           onRoute: () => onRoute(c.name),
           onTapCard: () => onTapCard(c.name),
         );
@@ -604,7 +856,7 @@ class _FloatingSearch extends StatelessWidget {
   }
 }
 
-class _FiltersRow extends StatelessWidget {
+/*class _FiltersRow extends StatelessWidget {
   final Set<String> active;
   final void Function(String) onTap;
   const _FiltersRow({required this.active, required this.onTap});
@@ -628,7 +880,7 @@ class _FiltersRow extends StatelessWidget {
       ),
     );
   }
-}
+}*/
 
 class _SnapSheet extends StatelessWidget {
   final Widget child;
@@ -689,14 +941,12 @@ class _ClinicsList extends StatelessWidget {
     ({String name, String address, String meta, List<String> tags}),
   )
   onOpen;
-  final void Function(String) onCall;
   final void Function(String) onRoute;
   final void Function(String) onTapCard;
 
   const _ClinicsList({
     required this.clinics,
     required this.onOpen,
-    required this.onCall,
     required this.onRoute,
     required this.onTapCard,
   });
@@ -712,7 +962,6 @@ class _ClinicsList extends StatelessWidget {
             meta: c.meta,
             tags: c.tags,
             onOpen: () => onOpen(c),
-            onCall: () => onCall(c.name),
             onRoute: () => onRoute(c.name),
             onTapCard: () => onTapCard(c.name),
           ),
@@ -729,7 +978,6 @@ class _ClinicCard extends StatelessWidget {
   final String meta;
   final List<String> tags;
   final VoidCallback onOpen;
-  final VoidCallback onCall;
   final VoidCallback onRoute;
   final VoidCallback onTapCard;
 
@@ -739,7 +987,6 @@ class _ClinicCard extends StatelessWidget {
     required this.meta,
     required this.tags,
     required this.onOpen,
-    required this.onCall,
     required this.onRoute,
     required this.onTapCard,
   });
@@ -752,7 +999,7 @@ class _ClinicCard extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: onTapCard, // tap rápido centra y hace bounce
+        onTap: onTapCard,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
           child: Column(
@@ -795,12 +1042,12 @@ class _ClinicCard extends StatelessWidget {
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: onCall,
-                      icon: const Icon(Icons.call),
-                      label: const Text('Llamar'),
+                      onPressed: onOpen,
+                      icon: const Icon(Icons.event_available),
+                      label: const Text('Agendar cita'),
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
@@ -809,7 +1056,7 @@ class _ClinicCard extends StatelessWidget {
                       ),
                       onPressed: onRoute,
                       icon: const Icon(Icons.directions),
-                      label: const Text('Ruta'),
+                      label: const Text('Cómo llegar'),
                     ),
                   ),
                 ],
@@ -1039,4 +1286,30 @@ class _RatingBadge extends StatelessWidget {
 class MediaStorePadding {
   static double of(BuildContext context) =>
       MediaQuery.of(context).padding.bottom;
+}
+
+class _FormField extends StatelessWidget {
+  final String title;
+  final Widget child;
+
+  const _FormField({required this.title, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: _kPrimaryDark,
+          ),
+        ),
+        const SizedBox(height: 8),
+        child,
+      ],
+    );
+  }
 }

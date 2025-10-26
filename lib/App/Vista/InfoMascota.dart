@@ -95,6 +95,13 @@ class _MascotasListScreenState extends State<MascotasListScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                 child: Row(
                   children: [
+                    IconButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      icon: Icon(Icons.arrow_back, color: Colors.white),
+                    ),
+                    const SizedBox(width: 4),
                     CircleAvatar(
                       radius: 28,
                       backgroundColor: Colors.white.withOpacity(.25),
@@ -444,23 +451,23 @@ class _MascotaDetailScreenState extends State<MascotaDetailScreen>
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-                Container(
-                  width: 84,
-                  height: 84,
-                  decoration: const BoxDecoration(shape: BoxShape.circle),
-                  child: CircleAvatar(
-                    radius: 42,
-                    backgroundColor: Colors.white,
-                    backgroundImage:
-                        p.fotoURL != null && p.fotoURL!.isNotEmpty
-                            ? NetworkImage('http://10.0.2.2:3000${p.fotoURL!}')
-                            : null,
-                    child:
-                        p.fotoURL == null || p.fotoURL!.isEmpty
-                            ? const Icon(Icons.pets, color: _kPrimary, size: 36)
-                            : null,
-                  ),
-                ),
+            Container(
+              width: 84,
+              height: 84,
+              decoration: const BoxDecoration(shape: BoxShape.circle),
+              child: CircleAvatar(
+                radius: 42,
+                backgroundColor: Colors.white,
+                backgroundImage:
+                    p.fotoURL != null && p.fotoURL!.isNotEmpty
+                        ? NetworkImage('http://10.0.2.2:3000${p.fotoURL!}')
+                        : null,
+                child:
+                    p.fotoURL == null || p.fotoURL!.isEmpty
+                        ? const Icon(Icons.pets, color: _kPrimary, size: 36)
+                        : null,
+              ),
+            ),
             const SizedBox(width: 14),
             // Texto flexible para evitar overflow
             Expanded(
@@ -478,7 +485,7 @@ class _MascotaDetailScreenState extends State<MascotaDetailScreen>
                   ),
                   const SizedBox(height: 2),
                   Text(
-                   '${p.especie} • ${p.raza ?? 'Sin Raza'}',
+                    '${p.especie} • ${p.raza ?? 'Sin Raza'}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.labelLarge?.copyWith(
@@ -492,7 +499,12 @@ class _MascotaDetailScreenState extends State<MascotaDetailScreen>
                           spacing: 8,
                           runSpacing: 8,
                           children: [
-                            _chip(context, Icons.catching_pokemon, 'Especie', especie),
+                            _chip(
+                              context,
+                              Icons.catching_pokemon,
+                              'Especie',
+                              especie,
+                            ),
                             _chip(context, Icons.female, 'Sexo', sexo),
                             _chip(context, Icons.monitor_weight, 'Peso', peso),
                           ],
@@ -548,7 +560,7 @@ class _MascotaDetailScreenState extends State<MascotaDetailScreen>
 
   Widget _buildPerfil(Mascota p) {
     final currentUser = Provider.of<AuthController>(context).currentUser;
-    //final propietarioNombre = currentUser?.nombre ?? "Usuario No Autenticado"; 
+    //final propietarioNombre = currentUser?.nombre ?? "Usuario No Autenticado";
     final propietarioEmail = currentUser?.email ?? "Sin Email";
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
@@ -560,7 +572,10 @@ class _MascotaDetailScreenState extends State<MascotaDetailScreen>
           _kv('Sexo', p.sexo),
           //_kv('Edad', '${p.edad} años'),
           _kv('Peso', '${p.peso ?? '—'} kg'),
-          _kv('Fecha de nacimiento', p.fechaNacimiento?.toIso8601String().split('T')[0] ?? '—'),
+          _kv(
+            'Fecha de nacimiento',
+            p.fechaNacimiento?.toIso8601String().split('T')[0] ?? '—',
+          ),
         ]),
         const SizedBox(height: 12),
         _infoCard(context, 'Dueño', [

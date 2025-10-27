@@ -5,6 +5,8 @@ import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import 'package:petcare_app/App/Controlador/mascota_controller.dart';
 
 const _kPrimary = Color(0xFF2F76A6);
 const _kPrimaryDark = Color(0xFF0E3A5C);
@@ -26,6 +28,8 @@ class _GeolocalizadorPageState extends State<GeolocalizadorPage> {
   final TextEditingController _searchCtrl = TextEditingController();
   final Set<String> _activeFilters = {'Consulta'};
 
+  List<String> _petNames = [];
+
   /// 0 = Mapa, 1 = Lista
   int _viewIndex = 0;
 
@@ -33,9 +37,11 @@ class _GeolocalizadorPageState extends State<GeolocalizadorPage> {
   final List<Marker> _baseMarkers = [];
 
   final Map<String, LatLng> _clinicPositions = const {
-    'Vet Centro Norte': LatLng(-12.046374, -77.042793),
-    'Clínica Mascotitas': LatLng(-12.050000, -77.045000),
-    'Vet Express': LatLng(-12.040000, -77.040000),
+    'Vet Centro Norte': LatLng(22.3700, -97.8840),
+
+    'Clínica Mascotitas': LatLng(22.3720, -97.8820),
+
+    'Vet Express': LatLng(22.3680, -97.8860),
   };
 
   List<({String name, String address, String meta, List<String> tags})>
@@ -50,7 +56,7 @@ class _GeolocalizadorPageState extends State<GeolocalizadorPage> {
       name: 'Clínica Mascotitas',
       address: 'Calle Sol 45',
       meta: 'L–V 9:00–18:00 • Consulta, Cuidado Animal',
-      tags: ['Consulta', 'Baños',' Peluquería'],
+      tags: ['Consulta', 'Baños', ' Peluquería'],
     ),
     (
       name: 'Vet Express',
@@ -66,6 +72,18 @@ class _GeolocalizadorPageState extends State<GeolocalizadorPage> {
     _mapController = MapController();
     _initializeMarkers();
     _checkLocationPermission();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadPetNames());
+  }
+
+  Future<void> _loadPetNames() async {
+    try {
+      final mc = Provider.of<PetController>(context, listen: false);
+      final names = await mc.getPetNames(); // debe devolver List<String>
+      if (!mounted) return;
+      setState(() => _petNames = names);
+    } catch (e) {
+      debugPrint('Error cargando nombres de mascotas: $e');
+    }
   }
 
   void _initializeMarkers() {
@@ -244,7 +262,7 @@ class _GeolocalizadorPageState extends State<GeolocalizadorPage> {
                     onSubmitted: (_) => _toast('Buscar: ${_searchCtrl.text}'),
                   ),
                   const SizedBox(height: 10),
-                 // _FiltersRow(active: _activeFilters, onTap: _toggleFilter),
+                  // _FiltersRow(active: _activeFilters, onTap: _toggleFilter),
                 ],
               ),
             ),
@@ -484,13 +502,74 @@ class _GeolocalizadorPageState extends State<GeolocalizadorPage> {
                           // Nombre de la mascota
                           _FormField(
                             title: 'Mascota',
-                            child: TextField(
-                              controller: mascotaController,
-                              decoration: const InputDecoration(
-                                hintText: 'Nombre de su mascota',
-                                prefixIcon: Icon(Icons.pets),
-                                border: OutlineInputBorder(),
-                              ),
+                            child: Autocomplete<String>(
+                              optionsBuilder: (
+                                TextEditingValue textEditingValue,
+                              ) {
+                                final input =
+                                    textEditingValue.text.toLowerCase();
+                                if (input.isEmpty)
+                                  return const Iterable<String>.empty();
+                                return _petNames.where(
+                                  (p) => p.toLowerCase().contains(input),
+                                );
+                              },
+                              displayStringForOption: (option) => option,
+                              fieldViewBuilder: (
+                                context,
+                                controller,
+                                focusNode,
+                                onFieldSubmitted,
+                              ) {
+                                mascotaController.text = controller.text;
+                                controller.addListener(() {
+                                  // mantener sincronía entre controllers
+                                  if (mascotaController.text !=
+                                      controller.text) {
+                                    mascotaController.text = controller.text;
+                                    mascotaController.selection =
+                                        controller.selection;
+                                  }
+                                });
+                                return TextField(
+                                  controller: controller,
+                                  focusNode: focusNode,
+                                  decoration: const InputDecoration(
+                                    hintText: 'Nombre de su mascota',
+                                    prefixIcon: Icon(Icons.pets),
+                                    border: OutlineInputBorder(),
+                                  ),
+                                );
+                              },
+                              onSelected: (selection) {
+                                mascotaController.text = selection;
+                              },
+                              optionsViewBuilder: (
+                                context,
+                                onSelected,
+                                options,
+                              ) {
+                                return Material(
+                                  elevation: 4,
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: ListView.separated(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 8,
+                                    ),
+                                    shrinkWrap: true,
+                                    itemCount: options.length,
+                                    separatorBuilder:
+                                        (_, __) => const Divider(height: 1),
+                                    itemBuilder: (ctx, i) {
+                                      final opt = options.elementAt(i);
+                                      return ListTile(
+                                        title: Text(opt),
+                                        onTap: () => onSelected(opt),
+                                      );
+                                    },
+                                  ),
+                                );
+                              },
                             ),
                           ),
                           const SizedBox(height: 20),
@@ -771,13 +850,6 @@ class _FrostedAppBar extends StatelessWidget {
                     ),
                   ],
                 ),
-              ),
-              _IconButtonGlass(
-                icon: Icons.tune,
-                onTap:
-                    () => ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(const SnackBar(content: Text('Opciones…'))),
               ),
             ],
           ),

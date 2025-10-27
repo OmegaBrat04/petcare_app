@@ -69,12 +69,11 @@ Future<void> _showAccountMenu(BuildContext context) async {
                     context,
                     listen: false,
                   ).logout();
-                } catch (_) {
-                }
+                } catch (_) {}
                 Navigator.of(context).pushReplacementNamed('/login');
               },
             ),
-            // Más opciones se pueden agregar aquí
+            
           ],
         ),
       );
@@ -104,8 +103,6 @@ class _HomeShellState extends State<HomeShell> {
 
   //int _index = 1; // Arranca en Veterinarias
   int _index = 0;
-  final TextEditingController _searchCtrl = TextEditingController();
-  String _query = '';
 
   @override
   void initState() {
@@ -114,7 +111,6 @@ class _HomeShellState extends State<HomeShell> {
 
   @override
   void dispose() {
-    _searchCtrl.dispose();
     super.dispose();
   }
 
@@ -167,32 +163,127 @@ class _HomeShellState extends State<HomeShell> {
                         child: _GlassHeader(),
                       ),
                     ),
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                        child: _SearchBarWhite(
-                          controller: _searchCtrl,
-                          hintText: 'Buscar mascotas, citas, veterinarias…',
-                          onChanged: (t) => setState(() => _query = t),
-                          onClear: () {
-                            _searchCtrl.clear();
-                            setState(() => _query = '');
-                          },
-                          onSubmitted: (_) {},
-                        ),
-                      ),
-                    ),
+
                     const SliverToBoxAdapter(child: SizedBox(height: 8)),
                   ],
               body: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 250),
                 child: Container(
-                  key: ValueKey('$_index|$_query'),
+                  key: ValueKey(_index),
                   padding: const EdgeInsets.fromLTRB(12, 6, 12, 24),
-                  child: IndexedStack(
-                    index: _index,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
 
-                    children: _modules.map((m) => m.page).toList(),
+                    children: [
+                      const Text(
+                        'Resumen',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Expanded(
+                        child: ListView(
+                          children: [
+                            _InfoCard(
+                              title: 'Próxima Cita',
+                              icon: Icons.event,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'No tienes citas programadas',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.white.withOpacity(0.9),
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed:
+                                        () => Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder:
+                                                (_) =>
+                                                    const CitasPage(),
+                                          ),
+                                        ),
+                                    child: const Text('Historial de Citas', style: TextStyle(
+                                      color: Colors.white
+                                    )),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            _InfoCard(
+                              title: 'Mis Mascotas',
+                              icon: Icons.pets,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Registra a tus mascotas para:',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.white.withOpacity(0.9),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  _BulletPoint('Agendar citas fácilmente'),
+                                  _BulletPoint('Mantener su historial médico'),
+                                  _BulletPoint('Recordatorios de vacunas'),
+                                  TextButton(
+                                    onPressed:
+                                        () => Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder:
+                                                (_) =>
+                                                    const MascotasListScreen(),
+                                          ),
+                                        ),
+                                    child: const Text('Ver mis mascotas', style: TextStyle(
+                                      color: Colors.white
+                                    )),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            _InfoCard(
+                              title: 'Veterinarias Cercanas',
+                              icon: Icons.local_hospital,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Encuentra veterinarias cercanas y sus servicios',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.white.withOpacity(0.9),
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed:
+                                        () => Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder:
+                                                (_) =>
+                                                    const GeolocalizadorPage(),
+                                          ),
+                                        ),
+                                    child: const Text('Buscar veterinarias', style: TextStyle(
+                                      color: Colors.white
+                                    )),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -247,6 +338,84 @@ class _HomeShellState extends State<HomeShell> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _InfoCard extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final Widget child;
+
+  const _InfoCard({
+    required this.title,
+    required this.icon,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: Colors.white),
+              const SizedBox(width: 12),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+class _BulletPoint extends StatelessWidget {
+  final String text;
+
+  const _BulletPoint(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.9),
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.white.withOpacity(0.9),
+            ),
+          ),
+        ],
       ),
     );
   }

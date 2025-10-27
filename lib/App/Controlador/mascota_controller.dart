@@ -119,4 +119,36 @@ class PetController extends ChangeNotifier {
       return 'Error de conexión o inesperado al obtener mascotas: ${e.toString()}';
     }
   }
+
+  Future<List<String>> getPetNames({bool forceRefresh = false}) async {
+    try {
+      // Si ya tenemos mascotas en memoria y no forzamos, retornamos sus nombres
+      if (!forceRefresh && _pets.isNotEmpty) {
+        return _pets.map((p) => p.nombre).where((s) => s.isNotEmpty).toList();
+      }
+
+      // Sino, pedir al API directamente
+      final token = await _storage.read(key: 'jwt_token');
+      if (token == null || token.isEmpty) return [];
+
+      final result = await _apiService.getPets(token: token);
+      if (result['success'] == true) {
+        final List<dynamic> list = result['data'] as List<dynamic>;
+
+        // Actualizar caché de mascotas
+        _pets = list
+            .map((json) => Mascota.fromJson(json as Map<String, dynamic>))
+            .toList();
+        notifyListeners();
+
+        // Extraer nombres directamente desde el modelo
+        return _pets.map((p) => p.nombre).where((s) => s.isNotEmpty).toList();
+      }
+
+      return [];
+    } catch (e, st) {
+      debugPrint('PetController.getPetNames -> excepción: $e\n$st');
+      return [];
+    }
+  }
 }

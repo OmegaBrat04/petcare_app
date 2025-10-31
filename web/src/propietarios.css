@@ -1,0 +1,97 @@
+/* --- Estilos complementarios para PropietariosUI --- */
+
+/* ✨ Transiciones suaves */
+.transition-base {
+  @apply transition-all duration-200 ease-in-out;
+}
+
+/* 💡 Hover genérico para tarjetas o filas */
+.hover-highlight:hover {
+  @apply bg-blue-50 dark:bg-blue-900/30;
+}
+
+/* 🔘 Botones personalizados */
+.btn-primary {
+  @apply bg-blue-600 text-white font-semibold px-4 py-2 rounded-xl shadow-sm transition-base;
+}
+.btn-primary:hover {
+  @apply bg-blue-700;
+}
+
+.btn-secondary {
+  @apply bg-gray-200 text-gray-800 font-medium px-3 py-2 rounded-lg transition-base;
+}
+.btn-secondary:hover {
+  @apply bg-gray-300;
+}
+
+/* 🪶 Chips de estado (puedes usar con <Chip />) */
+.chip {
+  @apply inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full border;
+}
+
+.chip-success {
+  @apply bg-green-100 text-green-700 border-green-300;
+}
+
+.chip-warning {
+  @apply bg-yellow-100 text-yellow-700 border-yellow-300;
+}
+
+.chip-danger {
+  @apply bg-red-100 text-red-700 border-red-300;
+}
+
+/* 📋 Tablas genéricas para ListTable */
+.table-base {
+  @apply w-full text-sm text-left border-collapse;
+}
+
+.table-base thead {
+  @apply bg-gray-100 text-gray-700 font-semibold;
+}
+
+.table-base th,
+.table-base td {
+  @apply px-4 py-2 border-b;
+}
+
+.table-base tr:hover {
+  @apply hover-highlight;
+}
+
+/* 💭 Estado vacío */
+.empty-state {
+  @apply text-center text-gray-500 py-12 italic;
+}
+
+/* 📱 Sidebar y main layout */
+.layout {
+  @apply flex h-screen bg-gray-50;
+}
+
+.sidebar {
+  @apply w-64 bg-white shadow-md p-4 flex flex-col justify-between;
+}
+
+.sidebar-item {
+  @apply flex items-center justify-between cursor-pointer px-3 py-2 rounded-lg transition-base;
+}
+.sidebar-item:hover {
+  @apply bg-blue-100;
+}
+
+.sidebar-item.active {
+  @apply bg-blue-600 text-white;
+}
+
+/* 🧭 Tabs */
+.tab-button {
+  @apply px-4 py-2 font-medium rounded-lg transition-base;
+}
+.tab-button.active {
+  @apply bg-blue-600 text-white;
+}
+.tab-button:hover:not(.active) {
+  @apply bg-blue-100;
+}

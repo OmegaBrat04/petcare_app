@@ -1,0 +1,46 @@
+.ui-layout {
+  @apply min-h-screen bg-gradient-to-b from-white via-blue-50/60 to-blue-100/30 text-gray-900;
+}
+
+.header-base {
+  @apply bg-white/80 backdrop-blur border-b border-blue-100;
+}
+
+.card-base {
+  @apply rounded-2xl bg-white border border-blue-100 shadow-sm shadow-blue-100/50;
+}
+
+/* Pasos */
+.step-circle {
+  @apply h-7 w-7 rounded-full border flex items-center justify-center text-xs font-semibold;
+}
+
+.step-done {
+  @apply bg-blue-600 text-white border-blue-600;
+}
+
+.step-active {
+  @apply bg-blue-100 text-blue-700 border-blue-200;
+}
+
+.step-inactive {
+  @apply bg-white text-gray-500 border-gray-300;
+}
+
+/* Botones y formularios */
+.btn-primary {
+  @apply rounded-lg bg-blue-600 text-white px-3 py-2 text-sm hover:bg-blue-700;
+}
+
+.btn-secondary {
+  @apply rounded-lg border border-blue-200 text-blue-700 px-3 py-2 text-sm hover:bg-blue-50;
+}
+
+.input-base {
+  @apply mt-1 w-full rounded-lg border px-3 py-2 text-sm border-blue-200;
+}
+
+.chip-base {
+  /* Estilo base del Chip */
+  @apply inline-flex items-center gap-1 rounded-full border border-blue-200 px-3 py-1 text-xs text-blue-700 bg-blue-50;
+}

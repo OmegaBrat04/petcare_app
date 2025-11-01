@@ -1,5 +1,4 @@
-import React, { useMemo, useState } from "react";
-import "@/styles/Profesionales.css";
+import React, { useState, useMemo } from "react"; // Esta línea ya la corregiste
 
 // --- Datos de ejemplo (sin especialidad) ---
 const profesionales = [

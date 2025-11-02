@@ -1,8 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import App from "./ProfecionalesUI"; // Aqui ponen la vista que quieren cargar
-import "./profecionales.css"; // Y aqui va el CSS correspondiente
-import "./index.css"; // 👈 AÑADE ESTA LÍNEA (o el nombre de tu CSS principal) (ESTE NO LO CAMBIEN)
+import App from "./RegistroVeterinariaConexion"; // Dejamos el componente aquí
+import "./index.css"; // <<-- ¡CAMBIA ESTO! Usamos el CSS principal de Tailwind.
 
 const rootEl = document.getElementById("root");
 if (rootEl) {

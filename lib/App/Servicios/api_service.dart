@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 
 class ApiService {
-  static const String _baseUrl = 'http://10.0.2.2:3000/api';
+  static const String _baseUrl = 'http://10.0.2.2:3000/api/mobile';
 
   // --------------------------------- REGISTRO ---------------------------------
   Future<Map<String, dynamic>> signUp({

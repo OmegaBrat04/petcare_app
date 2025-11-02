@@ -3,16 +3,19 @@ class Usuarios {
   final String email;
   final String role;
   final String token;
+  final String nombreCompleto;
 
   Usuarios({
     required this.id,
     required this.email,
     required this.role,
     required this.token,
+    required this.nombreCompleto,
   });
 
   // Método para crear un objeto User a partir del JSON de la API
   factory Usuarios.fromJson(Map<String, dynamic> json, String token) {
+    final rawNombre = json['nombreCompleto'] ?? json['NombreCompleto'] ?? '';
     final rawId =
         json['IdUsuario'] ?? json['id'] ?? json['idUsuario'] ?? json['Id'];
     if (rawId == null) {
@@ -31,6 +34,7 @@ class Usuarios {
       email: rawEmail.toString(),
       role: rawRole.toString(),
       token: token,
+      nombreCompleto: rawNombre.toString(),
     );
   }
 }

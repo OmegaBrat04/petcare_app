@@ -43,4 +43,35 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
-node_modules
+
+# Node.js related
+node_modules/
+**/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+web/dist/
+lib/Web/dist/
+
+# Variables de entorno (CREDENCIALES SENSIBLES)
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+web/.env.local
+web/.env.*.local
+
+# Archivos subidos por usuarios
+lib/Web/uploads/*
+!lib/Web/uploads/.gitkeep
+
+# Base de datos local
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs del servidor
+*.log
+logs/

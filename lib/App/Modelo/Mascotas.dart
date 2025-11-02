@@ -1,22 +1,24 @@
 class Mascota {
   final int idMascota;
-  final int idUsuario; 
+  final int idUsuario;
   final String nombre;
   final String especie;
-  final String? raza; 
+  final String? raza;
   final String sexo;
-  final int? peso; 
+  final int edad;
+  final int? peso;
   final String? fotoURL; // La URL o ruta después de subirla
   final DateTime? fechaNacimiento;
   final DateTime fechaRegistro;
 
   Mascota({
     required this.idMascota,
-    required this.idUsuario ,
+    required this.idUsuario,
     required this.nombre,
     required this.especie,
     required this.sexo,
     this.raza,
+    required this.edad,
     this.peso,
     this.fotoURL,
     this.fechaNacimiento,
@@ -31,6 +33,10 @@ class Mascota {
       nombre: json['Nombre'],
       especie: json['Especie'],
       sexo: json['Sexo'],
+      edad:
+          (json['Edad'] != null && json['Edad'] is int)
+              ? json['Edad'] as int
+              : int.tryParse(json['Edad']?.toString() ?? '0') ?? 0,
       raza: json['Raza'],
       peso: json['Peso'] != null ? int.tryParse(json['Peso'].toString()) : null,
       fotoURL: json['Foto'],

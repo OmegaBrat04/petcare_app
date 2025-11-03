@@ -16,15 +16,34 @@ interface Servicio {
 
 // Interfaz para el estado unificado del formulario
 interface FormData {
+  // Responsable
   nombreResponsable: string;
   apellidosResponsable: string;
   emailResponsable: string;
   telefonoResponsable: string;
+
+  // Veterinaria
   nombreComercial: string;
+  descripcionVeterinaria: string;
   horaApertura: string;
   horaCierre: string;
-  descripcionVeterinaria: string;
-  // Debes expandir esto para incluir todos los demás campos de los pasos 3, 4 y 6
+
+  // Ubicación
+  calle: string;
+  numeroExterior: string;
+  colonia: string;
+  ciudad: string;
+  estado: string;
+  codigoPostal: string;
+  referencias: string;
+
+  // Contacto
+  telefonoClinica: string;
+  whatsapp: string;
+  emailClinica: string;
+  sitioWeb: string;
+  facebook: string;
+  instagram: string;
 }
 
 const initialServices: Servicio[] = [];
@@ -35,9 +54,22 @@ const initialFormData: FormData = {
   emailResponsable: "",
   telefonoResponsable: "",
   nombreComercial: "",
+  descripcionVeterinaria: "",
   horaApertura: "",
   horaCierre: "",
-  descripcionVeterinaria: "",
+  calle: "",
+  numeroExterior: "",
+  colonia: "",
+  ciudad: "",
+  estado: "",
+  codigoPostal: "",
+  referencias: "",
+  telefonoClinica: "",
+  whatsapp: "",
+  emailClinica: "",
+  sitioWeb: "",
+  facebook: "",
+  instagram: "",
 };
 
 // --- COMPONENTES UI REUTILIZABLES ---
@@ -100,8 +132,7 @@ const Field: React.FC<FieldProps> = ({
   ...rest
 }) => (
   <label className={`text-sm block ${fullWidth ? "sm:col-span-2" : ""}`}>
-        <span className="text-gray-600">{label}</span>
-       {" "}
+        <span className="text-gray-600">{label}</span>   {" "}
     <input
       type={type}
       placeholder={placeholder}
@@ -128,8 +159,7 @@ const Textarea: React.FC<TextareaProps> = ({
   ...rest
 }) => (
   <label className={`text-sm block ${fullWidth ? "sm:col-span-2" : ""}`}>
-        <span className="text-gray-600">{label}</span>
-       {" "}
+        <span className="text-gray-600">{label}</span>   {" "}
     <textarea
       placeholder={placeholder}
       rows={rows}
@@ -287,8 +317,8 @@ const FormStep: React.FC<FormStepProps> = ({
             placeholder="CURP/RFC (opcional)"
           />
                    {" "}
-          <Field label="Puesto" placeholder="Administrador(a) / Dueño(a)" />
-                   {" "}
+          <Field label="Puesto" placeholder="Administrador(a) / Dueño(a)" />   
+               {" "}
           <Field
             label="Teléfono"
             placeholder="(###) ### ####"
@@ -326,10 +356,9 @@ const FormStep: React.FC<FormStepProps> = ({
             onChange={(e) => handleChange("nombreComercial", e.target.value)}
           />
                     <Field label="Razón social" placeholder="(opcional)" />
-                    <Field label="RFC" placeholder="(opcional)" />
-                   {" "}
-          <Field label="Categorías" placeholder="Clínica, 24/7, Emergencias" />
-                             {" "}
+                    <Field label="RFC" placeholder="(opcional)" />         {" "}
+          <Field label="Categorías" placeholder="Clínica, 24/7, Emergencias" /> 
+                           {" "}
           <Textarea
             label="Descripción"
             placeholder="Breve descripción de la clínica (máx. 240 caracteres)"
@@ -375,14 +404,48 @@ const FormStep: React.FC<FormStepProps> = ({
         subtitle="Se usará para posicionar el pin en el mapa"
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Calle y número" placeholder="Av. 15 de Mayo 456" />
-          <Field label="Colonia" placeholder="Centro" />
-          <Field label="Ciudad" placeholder="Ciudad" />
-          <Field label="Estado" placeholder="Estado" />
-          <Field label="Código postal" placeholder="#####" />
+          <Field
+            label="Calle"
+            placeholder="Av. 15 de Mayo"
+            value={formData.calle}
+            onChange={(e) => handleChange("calle", e.target.value)}
+          />
+          <Field
+            label="Número exterior"
+            placeholder="456"
+            value={formData.numeroExterior}
+            onChange={(e) => handleChange("numeroExterior", e.target.value)}
+          />
+          <Field
+            label="Colonia"
+            placeholder="Centro"
+            value={formData.colonia}
+            onChange={(e) => handleChange("colonia", e.target.value)}
+          />
+          <Field
+            label="Ciudad"
+            placeholder="Ciudad"
+            value={formData.ciudad}
+            onChange={(e) => handleChange("ciudad", e.target.value)}
+          />
+          <Field
+            label="Estado"
+            placeholder="Estado"
+            value={formData.estado}
+            onChange={(e) => handleChange("estado", e.target.value)}
+          />
+          <Field
+            label="Código postal"
+            placeholder="#####"
+            value={formData.codigoPostal}
+            onChange={(e) => handleChange("codigoPostal", e.target.value)}
+          />
           <Field
             label="Referencias"
             placeholder="Frente a parque / esquina..."
+            fullWidth
+            value={formData.referencias}
+            onChange={(e) => handleChange("referencias", e.target.value)}
           />
         </div>
         <div className="mt-4 rounded-2xl overflow-hidden border border-blue-100">
@@ -409,16 +472,43 @@ const FormStep: React.FC<FormStepProps> = ({
     4: (
       <Section title="Contacto y redes">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Teléfono de la clínica" placeholder="(###) ### ####" />
-          <Field label="WhatsApp" placeholder="(###) ### ####" />
+          <Field
+            label="Teléfono de la clínica"
+            placeholder="(###) ### ####"
+            value={formData.telefonoClinica}
+            onChange={(e) => handleChange("telefonoClinica", e.target.value)}
+          />
+          <Field
+            label="WhatsApp"
+            placeholder="(###) ### ####"
+            value={formData.whatsapp}
+            onChange={(e) => handleChange("whatsapp", e.target.value)}
+          />
           <Field
             label="Email"
             type="email"
             placeholder="contacto@veterinaria.com"
+            value={formData.emailClinica}
+            onChange={(e) => handleChange("emailClinica", e.target.value)}
           />
-          <Field label="Sitio web" placeholder="https://" />
-          <Field label="Facebook" placeholder="https://facebook.com/" />
-          <Field label="Instagram" placeholder="https://instagram.com/" />
+          <Field
+            label="Sitio web"
+            placeholder="https://"
+            value={formData.sitioWeb}
+            onChange={(e) => handleChange("sitioWeb", e.target.value)}
+          />
+          <Field
+            label="Facebook"
+            placeholder="https://facebook.com/"
+            value={formData.facebook}
+            onChange={(e) => handleChange("facebook", e.target.value)}
+          />
+          <Field
+            label="Instagram"
+            placeholder="https://instagram.com/"
+            value={formData.instagram}
+            onChange={(e) => handleChange("instagram", e.target.value)}
+          />
         </div>
       </Section>
     ),

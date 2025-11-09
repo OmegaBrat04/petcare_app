@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -7,6 +8,9 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:petcare_app/App/Controlador/mascota_controller.dart';
+import 'package:petcare_app/App/Modelo/Clinica.dart';
+import 'package:petcare_app/App/Servicios/api_service.dart';
+import 'package:petcare_app/App/Controlador/veterinaria_controller.dart';
 
 const _kPrimary = Color(0xFF2F76A6);
 const _kPrimaryDark = Color(0xFF0E3A5C);
@@ -20,59 +24,54 @@ class GeolocalizadorPage extends StatefulWidget {
 
 class _GeolocalizadorPageState extends State<GeolocalizadorPage> {
   MapController? _mapController;
+  StreamSubscription<MapEvent>? _mapSub;
   final LatLng _center = const LatLng(-12.046374, -77.042793);
+  LatLng _lastMapCenter = const LatLng(-12.046374, -77.042793);
+  double _lastZoom = 14;
   LatLng? _currentPosition;
   bool _isLoadingLocation = false;
+  bool _isLoadingClinics = false;
   String _mapType = 'streets';
 
   final TextEditingController _searchCtrl = TextEditingController();
-  final Set<String> _activeFilters = {'Consulta'};
+  String _searchQuery = '';
 
   List<String> _petNames = [];
 
   /// 0 = Mapa, 1 = Lista
   int _viewIndex = 0;
+  final List<double> _radiusOptions = const [2, 5, 10, 20];
+  double _radiusKm = 5;
 
-  // ---- Datos “fake” de clínicas y posiciones
-  final List<Marker> _baseMarkers = [];
-
-  final Map<String, LatLng> _clinicPositions = const {
-    'Vet Centro Norte': LatLng(22.3700, -97.8840),
-
-    'Clínica Mascotitas': LatLng(22.3720, -97.8820),
-
-    'Vet Express': LatLng(22.3680, -97.8860),
-  };
-
-  List<({String name, String address, String meta, List<String> tags})>
-  get _clinics => const [
-    (
-      name: 'Vet Centro Norte',
-      address: 'Av. Los Olivos 123',
-      meta: 'L–S 8:00–20:00 • Consulta, Control de Salud, Rayos X',
-      tags: ['Consultas', 'Vacunas', 'Cirugias', 'Desparasitaciones'],
-    ),
-    (
-      name: 'Clínica Mascotitas',
-      address: 'Calle Sol 45',
-      meta: 'L–V 9:00–18:00 • Consulta, Cuidado Animal',
-      tags: ['Consulta', 'Baños', ' Peluquería'],
-    ),
-    (
-      name: 'Vet Express',
-      address: 'Jr. Lima 780',
-      meta: '24h • Urgencias, Atencion Inmediata, Eco',
-      tags: ['Consultas', 'Cirugias', 'Eco'],
-    ),
-  ];
+  final List<Clinica> _clinicasAll = [];
+  final List<Clinica> _clinicas = [];
+  final List<Marker> _allMarkers = [];
 
   @override
   void initState() {
     super.initState();
     _mapController = MapController();
-    _initializeMarkers();
+    _mapSub = _mapController!.mapEventStream.listen((evt) {
+      _lastMapCenter = evt.camera.center;
+      _lastZoom = evt.camera.zoom;
+    });
+    _searchCtrl.addListener(() {
+      final q = _searchCtrl.text.trim();
+      if (q != _searchQuery) {
+        _searchQuery = q;
+        _applyFilters();
+      }
+    });
     _checkLocationPermission();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadPetNames());
+    _loadPetNames();
+    _loadClinics();
+  }
+
+  @override
+  void dispose() {
+    _mapSub?.cancel();
+    _searchCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _loadPetNames() async {
@@ -86,21 +85,43 @@ class _GeolocalizadorPageState extends State<GeolocalizadorPage> {
     }
   }
 
-  void _initializeMarkers() {
-    // Crear marcadores para cada clínica
-    _clinicPositions.forEach((name, pos) {
-      _baseMarkers.add(
-        Marker(
-          point: pos,
-          width: 40,
-          height: 40,
-          child: GestureDetector(
-            onTap: () => _showClinicInfo(name),
-            child: const Icon(Icons.local_hospital, color: _kPrimaryDark),
-          ),
-        ),
+  Future<void> _loadClinics() async {
+    setState(() => _isLoadingClinics = true);
+    try {
+      final result = await ApiService.getClinicas();
+      if (!mounted) return;
+      _clinicasAll
+        ..clear()
+        ..addAll(result.where((c) => c.lat != null && c.lon != null));
+
+      _buildAllMarkers();
+      _applyFilters();
+    } catch (e) {
+      debugPrint('Error cargando clínicas: $e');
+      _toast('No se pudieron cargar las clínicas.');
+    } finally {
+      if (mounted) setState(() => _isLoadingClinics = false);
+    }
+  }
+
+  void _buildAllMarkers() {
+    _allMarkers
+      ..clear()
+      ..addAll(
+        _clinicasAll.map((c) {
+          final pos = LatLng(c.lat!, c.lon!);
+          return Marker(
+            point: pos,
+            width: 40,
+            height: 40,
+            child: GestureDetector(
+              onTap: () => _showClinicInfo(c),
+              child: const Icon(Icons.local_hospital, color: _kPrimaryDark),
+            ),
+          );
+        }),
       );
-    });
+    setState(() {});
   }
 
   void _recenter() {
@@ -109,18 +130,44 @@ class _GeolocalizadorPageState extends State<GeolocalizadorPage> {
     }
   }
 
-  void _simulateGetLocation() {
-    _getCurrentLocation();
+  void _applyFilters() {
+    // 1. Aplica radio
+    List<Clinica> base;
+    if (_currentPosition == null) {
+      base = List.from(_clinicasAll);
+    } else {
+      base = VeterinariaController.byRadius(
+        clinics: _clinicasAll,
+        center: _currentPosition!,
+        radiusKm: _radiusKm,
+      );
+    }
+
+    // 2. Aplica búsqueda
+    final q = _searchQuery.toLowerCase();
+    if (q.isNotEmpty) {
+      base =
+          base.where((c) {
+            final nombre = (c.name).toLowerCase();
+            final direccion = (c.address ?? '').toLowerCase();
+            final servicios = (c.servicios ?? [])
+                .map((s) => s.name.toLowerCase())
+                .join(' ');
+            return nombre.contains(q) ||
+                direccion.contains(q) ||
+                servicios.contains(q);
+          }).toList();
+    }
+
+    setState(() {
+      _clinicas
+        ..clear()
+        ..addAll(base);
+    });
   }
 
-  void _toggleFilter(String filter) {
-    setState(() {
-      if (_activeFilters.contains(filter)) {
-        _activeFilters.remove(filter);
-      } else {
-        _activeFilters.add(filter);
-      }
-    });
+  void _simulateGetLocation() {
+    _getCurrentLocation();
   }
 
   Future<void> _checkLocationPermission() async {
@@ -159,19 +206,21 @@ class _GeolocalizadorPageState extends State<GeolocalizadorPage> {
         _isLoadingLocation = false;
       });
       _mapController?.move(_currentPosition!, 15);
+      _lastMapCenter = _currentPosition!;
+      _lastZoom = 15;
+      _applyFilters();
     } catch (e) {
       _toast('Error al obtener ubicación');
       setState(() => _isLoadingLocation = false);
     }
   }
 
-  void _showClinicInfo(String name) {
-    final clinic = _clinics.firstWhere((c) => c.name == name);
-    _openClinicSheet(clinic);
+  void _showClinicInfo(Clinica c) {
+    _openClinicSheet(c);
   }
 
   List<Marker> get _markers {
-    final markers = List<Marker>.from(_baseMarkers);
+    final markers = List<Marker>.from(_allMarkers);
     if (_currentPosition != null) {
       markers.add(
         Marker(
@@ -185,14 +234,19 @@ class _GeolocalizadorPageState extends State<GeolocalizadorPage> {
     return markers;
   }
 
-  void _focusClinic(String name) {
-    final pos = _clinicPositions[name];
-    if (pos == null) return;
-
-    if (_viewIndex != 0) {
-      setState(() => _viewIndex = 0);
+  void _focusClinic(String idOrName) {
+    Clinica? c;
+    try {
+      c = _clinicas.firstWhere(
+        (x) => x.name == idOrName || x.id.toString() == idOrName,
+      );
+    } catch (e) {
+      c = null;
     }
 
+    if (c == null || c.lat == null || c.lon == null) return;
+    final pos = LatLng(c.lat!, c.lon!);
+    if (_viewIndex != 0) setState(() => _viewIndex = 0);
     _mapController?.move(pos, 16);
   }
 
@@ -209,16 +263,14 @@ class _GeolocalizadorPageState extends State<GeolocalizadorPage> {
       body: Stack(
         children: [
           // Mapa o Lista
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 250),
-            child:
-                _viewIndex == 0
-                    ? FlutterMap(
-                      key: const ValueKey('map'),
-                      mapController: _mapController,
-                      options: MapOptions(
-                        initialCenter: _center,
-                        initialZoom: 14,
+          IndexedStack(
+            index: _viewIndex,
+            children: [
+              FlutterMap(
+                mapController: _mapController,
+                options: MapOptions(
+                  initialCenter: _lastMapCenter,
+                  initialZoom: _lastZoom,
                       ),
                       children: [
                         TileLayer(
@@ -230,14 +282,14 @@ class _GeolocalizadorPageState extends State<GeolocalizadorPage> {
                         ),
                         MarkerLayer(markers: _markers),
                       ],
-                    )
-                    : _FullScreenList(
-                      key: const ValueKey('list'),
-                      clinics: _clinics,
+                    ),
+                     _FullScreenList(
+                      clinics: _clinicas,
                       onOpen: _openClinicSheet,
                       onRoute: (n) => _focusClinic(n),
                       onTapCard: (n) => _focusClinic(n),
                     ),
+            ],
           ),
 
           // ======== TOP BAR FLOTANTE (tono azul) ========
@@ -258,11 +310,25 @@ class _GeolocalizadorPageState extends State<GeolocalizadorPage> {
                   _FloatingSearch(
                     controller: _searchCtrl,
                     hint: 'Buscar por nombre, calle o servicio…',
-                    onClear: () => setState(_searchCtrl.clear),
-                    onSubmitted: (_) => _toast('Buscar: ${_searchCtrl.text}'),
+                    onClear: () {
+                      _searchCtrl.clear();
+                      _searchQuery = '';
+                      _applyFilters();
+                    },
+                    onChanged: (_) => _applyFilters(),
+                    onSubmitted: (_) => _applyFilters(),
                   ),
                   const SizedBox(height: 10),
-                  // _FiltersRow(active: _activeFilters, onTap: _toggleFilter),
+                  _RadiusFilterRow(
+                    optionsKm: _radiusOptions,
+                    selectedKm: _radiusKm,
+                    onChanged: (km) {
+                      setState(() => _radiusKm = km);
+                      _applyFilters();
+                    },
+                    enabled: _currentPosition != null,
+                  ),
+                  const SizedBox(height: 10),
                 ],
               ),
             ),
@@ -272,16 +338,17 @@ class _GeolocalizadorPageState extends State<GeolocalizadorPage> {
           if (_viewIndex == 0)
             _SnapSheet(
               child: _ClinicsList(
-                clinics: _clinics,
+                clinics: _clinicas,
                 onOpen: (c) {
-                  _focusClinic(c.name);
+                  _focusClinic(c.id.toString());
                   _openClinicSheet(c);
                 },
-                onRoute: (n) {
-                  _focusClinic(n);
-                  _toast('Trazando ruta hacia $n…');
+                onRoute: (id) {
+                  _focusClinic(id);
+                  _toast('Trazando ruta…');
                 },
-                onTapCard: (n) => _focusClinic(n),
+                onTapCard: (id) => _focusClinic(id),
+                loading: _isLoadingClinics,
               ),
             ),
 
@@ -326,9 +393,14 @@ class _GeolocalizadorPageState extends State<GeolocalizadorPage> {
     );
   }
 
-  void _openClinicSheet(
-    ({String name, String address, String meta, List<String> tags}) c,
-  ) {
+  void _openClinicSheet(Clinica c) {
+    final meta = _buildMeta(c);
+    final tags =
+        (c.servicios ?? [])
+            .map((s) => s.name)
+            .where((e) => e.trim().isNotEmpty)
+            .take(6)
+            .toList();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -360,26 +432,24 @@ class _GeolocalizadorPageState extends State<GeolocalizadorPage> {
                   c.name,
                   style: const TextStyle(fontWeight: FontWeight.w900),
                 ),
-                subtitle: Text(c.address),
+                subtitle: Text(c.address ?? 'Dirección no disponible'),
                 trailing: const _RatingBadge(rating: 4.7),
               ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-                child: Align(
-                  alignment: Alignment.centerLeft,
+              if (tags.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                   child: Wrap(
                     spacing: 6,
-                    runSpacing: -6,
-                    children: c.tags.map((t) => _Tag(t)).toList(),
+                    runSpacing: 6,
+                    children: tags.map((t) => _Tag(t)).toList(),
                   ),
                 ),
-              ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    c.meta,
+                    meta,
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
@@ -400,17 +470,7 @@ class _GeolocalizadorPageState extends State<GeolocalizadorPage> {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _kPrimary,
-                          foregroundColor: Colors.white,
-                        ),
-                        onPressed: () => _toast('Abrir en Maps…'),
-                        icon: const Icon(Icons.directions),
-                        label: const Text('Cómo llegar'),
-                      ),
-                    ),
+                    
                   ],
                 ),
               ),
@@ -422,9 +482,7 @@ class _GeolocalizadorPageState extends State<GeolocalizadorPage> {
     );
   }
 
-  void _showAgendarCitaForm(
-    ({String name, String address, String meta, List<String> tags}) clinic,
-  ) {
+  void _showAgendarCitaForm(Clinica clinic) {
     final mascotaController = TextEditingController();
     final telefonoController = TextEditingController();
     final motivoController = TextEditingController();
@@ -432,7 +490,7 @@ class _GeolocalizadorPageState extends State<GeolocalizadorPage> {
     String? servicioSeleccionado;
 
     // Servicios ejemplo (vendrían de la veterinaria)
-    final servicios = clinic.tags;
+    final servicios = (clinic.servicios ?? []).map((s) => s.name).toList();
 
     showModalBottomSheet(
       context: context,
@@ -736,18 +794,39 @@ class _GeolocalizadorPageState extends State<GeolocalizadorPage> {
   }
 }
 
+String _formatHora(String? h) {
+  if (h == null || h.isEmpty) return '';
+  try {
+    if (h.contains('T')) {
+      final dt = DateTime.parse(h);
+      return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+    }
+    final parts = h.split(':');
+    if (parts.length >= 2) {
+      return '${parts[0].padLeft(2, '0')}:${parts[1].padLeft(2, '0')}';
+    }
+  } catch (e) {
+    debugPrint('Error formateando hora: $e');
+  }
+  return h;
+}
+
+String _buildMeta(Clinica c) {
+  final ha = _formatHora(c.horarioApertura);
+  final hc = _formatHora(c.horarioCierre);
+  // SOLO mostrar horario, SIN servicios
+  return (ha.isNotEmpty && hc.isNotEmpty)
+      ? 'L–D $ha–$hc'
+      : 'Horario no disponible';
+}
+
 // ============================ SUBWIDGETS / UI ============================
 
 class _FullScreenList extends StatelessWidget {
-  final List<({String name, String address, String meta, List<String> tags})>
-  clinics;
-  final void Function(
-    ({String name, String address, String meta, List<String> tags}),
-  )
-  onOpen;
-  final void Function(String) onRoute;
-  final void Function(String) onTapCard;
-
+  final List<Clinica> clinics;
+  final void Function(Clinica) onOpen;
+  final void Function(String id) onRoute;
+  final void Function(String id) onTapCard;
   const _FullScreenList({
     super.key,
     required this.clinics,
@@ -764,14 +843,16 @@ class _FullScreenList extends StatelessWidget {
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (_, i) {
         final c = clinics[i];
+        final tags = (c.servicios ?? []).map((s) => s.name).take(6).toList();
         return _ClinicCard(
+          id: c.id.toString(),
           name: c.name,
-          address: c.address,
-          meta: c.meta,
-          tags: c.tags,
+          address: c.address ?? '',
+          meta: _buildMeta(c), // Ya está correcto
+          tags: tags,
           onOpen: () => onOpen(c),
-          onRoute: () => onRoute(c.name),
-          onTapCard: () => onTapCard(c.name),
+          onRoute: () => onRoute(c.id.toString()),
+          onTapCard: () => onTapCard(c.id.toString()),
         );
       },
     );
@@ -864,11 +945,13 @@ class _FloatingSearch extends StatelessWidget {
   final String hint;
   final VoidCallback onClear;
   final ValueChanged<String>? onSubmitted;
+  final ValueChanged<String>? onChanged;
   const _FloatingSearch({
     required this.controller,
     required this.hint,
     required this.onClear,
     this.onSubmitted,
+    this.onChanged,
   });
 
   @override
@@ -904,6 +987,7 @@ class _FloatingSearch extends StatelessWidget {
                 ),
                 textInputAction: TextInputAction.search,
                 onSubmitted: onSubmitted,
+                onChanged: onChanged,
               ),
             ),
             ValueListenableBuilder<TextEditingValue>(
@@ -928,31 +1012,44 @@ class _FloatingSearch extends StatelessWidget {
   }
 }
 
-/*class _FiltersRow extends StatelessWidget {
-  final Set<String> active;
-  final void Function(String) onTap;
-  const _FiltersRow({required this.active, required this.onTap});
+// ...existing code...
+class _RadiusFilterRow extends StatelessWidget {
+  final List<double> optionsKm;
+  final double selectedKm;
+  final ValueChanged<double> onChanged;
+  final bool enabled;
+  const _RadiusFilterRow({
+    required this.optionsKm,
+    required this.selectedKm,
+    required this.onChanged,
+    this.enabled = true,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final tags = const ['Consulta', 'Vacunas', 'Cirugía', '24h', 'Urgencias'];
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          for (final t in tags) ...[
-            _ChipSelectable(
-              label: t,
-              selected: active.contains(t),
-              onTap: () => onTap(t),
-            ),
-            const SizedBox(width: 8),
-          ],
-        ],
-      ),
+    return Wrap(
+      spacing: 8,
+      children:
+          optionsKm.map((km) {
+            final sel = km == selectedKm;
+            return ChoiceChip(
+              label: Text('${km.toStringAsFixed(km >= 10 ? 0 : 0)} km'),
+              selected: sel,
+              onSelected: enabled ? (_) => onChanged(km) : null,
+              selectedColor: _kPrimary.withOpacity(.15),
+              labelStyle: TextStyle(
+                color: sel ? _kPrimaryDark : Colors.black87,
+                fontWeight: FontWeight.w700,
+              ),
+              backgroundColor: Colors.white,
+              shape: StadiumBorder(
+                side: BorderSide(color: sel ? _kPrimary : Colors.black12),
+              ),
+            );
+          }).toList(),
     );
   }
-}*/
+}
 
 class _SnapSheet extends StatelessWidget {
   final Widget child;
@@ -1007,35 +1104,42 @@ class _SnapSheet extends StatelessWidget {
 }
 
 class _ClinicsList extends StatelessWidget {
-  final List<({String name, String address, String meta, List<String> tags})>
-  clinics;
-  final void Function(
-    ({String name, String address, String meta, List<String> tags}),
-  )
-  onOpen;
-  final void Function(String) onRoute;
-  final void Function(String) onTapCard;
-
+  final List<Clinica> clinics;
+  final void Function(Clinica) onOpen;
+  final void Function(String id) onRoute;
+  final void Function(String id) onTapCard;
+  final bool loading;
   const _ClinicsList({
+    super.key,
     required this.clinics,
     required this.onOpen,
     required this.onRoute,
     required this.onTapCard,
+    this.loading = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    if (loading) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24.0),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
     return Column(
       children: [
         for (final c in clinics) ...[
           _ClinicCard(
+            id: c.id.toString(),
             name: c.name,
-            address: c.address,
-            meta: c.meta,
-            tags: c.tags,
+            address: c.address ?? '',
+            meta: _buildMeta(c),
+            tags: (c.servicios ?? []).map((s) => s.name).take(6).toList(),
             onOpen: () => onOpen(c),
-            onRoute: () => onRoute(c.name),
-            onTapCard: () => onTapCard(c.name),
+            onRoute: () => onRoute(c.id.toString()),
+            onTapCard: () => onTapCard(c.id.toString()),
           ),
           const SizedBox(height: 10),
         ],
@@ -1045,6 +1149,7 @@ class _ClinicsList extends StatelessWidget {
 }
 
 class _ClinicCard extends StatelessWidget {
+  final String id;
   final String name;
   final String address;
   final String meta;
@@ -1054,6 +1159,7 @@ class _ClinicCard extends StatelessWidget {
   final VoidCallback onTapCard;
 
   const _ClinicCard({
+    required this.id,
     required this.name,
     required this.address,
     required this.meta,
@@ -1102,13 +1208,18 @@ class _ClinicCard extends StatelessWidget {
               const SizedBox(height: 6),
               Text(address, style: const TextStyle(color: Colors.black87)),
               const SizedBox(height: 4),
-              Text(meta, style: const TextStyle(fontWeight: FontWeight.w600)),
+              if (tags.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: tags.map((t) => _Tag(t)).toList(),
+                  ),
+                ),
+
               const SizedBox(height: 8),
-              Wrap(
-                spacing: 6,
-                runSpacing: -6,
-                children: tags.map((t) => _Tag(t)).toList(),
-              ),
+              Text(meta, style: const TextStyle(fontWeight: FontWeight.w600)),
               const SizedBox(height: 10),
               Row(
                 children: [
@@ -1120,17 +1231,7 @@ class _ClinicCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _kPrimary,
-                        foregroundColor: Colors.white,
-                      ),
-                      onPressed: onRoute,
-                      icon: const Icon(Icons.directions),
-                      label: const Text('Cómo llegar'),
-                    ),
-                  ),
+                  
                 ],
               ),
             ],
@@ -1249,51 +1350,6 @@ class _CTAButton extends StatelessWidget {
       onPressed: onTap,
       icon: Icon(icon),
       label: Text(label),
-    );
-  }
-}
-
-class _ChipSelectable extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-  const _ChipSelectable({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(999),
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? _kPrimary.withOpacity(.15) : Colors.white,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: selected ? _kPrimary : Colors.black12),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              selected ? Icons.check_circle : Icons.circle_outlined,
-              size: 16,
-              color: selected ? _kPrimaryDark : Colors.black38,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                color: selected ? _kPrimaryDark : Colors.black87,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

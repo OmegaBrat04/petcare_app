@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'dart:io';
 import 'package:path/path.dart' as p;
+import 'package:petcare_app/App/Modelo/Clinica.dart';
 
 class ApiService {
   static const String _baseUrl = 'http://10.0.2.2:3000/api/mobile';
@@ -143,5 +144,16 @@ class ApiService {
             responseBody['message'] ?? 'Error al obtener la lista de mascotas.',
       };
     }
+  }
+  // ------------------------------ OBTENER CLINICAS ------------------------------
+  static Future<List<Clinica>> getClinicas() async {
+    final url = Uri.parse('$_baseUrl/veterinarias');
+    final res = await http.get(url);
+    if (res.statusCode != 200) {
+      throw Exception('Error al obtener veterinarias (${res.statusCode})');
+    }
+    final body = json.decode(res.body) as Map<String, dynamic>;
+    final list = (body['data'] as List<dynamic>? ?? []);
+    return list.map((e) => Clinica.fromJson(e as Map<String, dynamic>)).toList();
   }
 }

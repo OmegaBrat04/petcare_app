@@ -16,12 +16,16 @@ class Servicios {
   });
 
   factory Servicios.fromMap(Map<String, dynamic> m) => Servicios(
-        id: m['id'] as int,
-        clinicId: m['veterinaria_id'] as int,
+        id: m['id'] is int ? m['id'] as int : (m['id'] as num?)?.toInt() ?? 0,
+        clinicId: m['veterinaria_id'] is int
+            ? m['veterinaria_id'] as int
+            : (m['veterinaria_id'] as num?)?.toInt() ?? 0,
         name: m['nombre'] as String,
         description: m['descripcion'] as String?,
         price: (m['precio'] as num?)?.toDouble(),
-        active: (m['activo'] as int? ?? 1) == 1,
+        active: m['activo'] is bool
+            ? (m['activo'] as bool)
+            : ((m['activo'] as num?)?.toInt() ?? 1) == 1,
       );
 
   Map<String, dynamic> toMap() => {
@@ -32,4 +36,6 @@ class Servicios {
         'precio': price,
         'activo': active ? 1 : 0,
       };
+
+  
 }

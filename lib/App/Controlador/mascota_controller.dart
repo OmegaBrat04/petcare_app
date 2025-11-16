@@ -95,16 +95,18 @@ class PetController extends ChangeNotifier {
       final token = await _storage.read(key: 'jwt_token');
       
       if (token == null || token.isEmpty) {
+        debugPrint('❌ [fetchPets] Token vacío');
         return "Token no encontrado. Vuelve a iniciar sesión.";
       }
 
-      //Llamar al API Service para obtener la lista
-      final result = await _apiService.getPets(token: token); 
+      debugPrint('🐾 [fetchPets] Llamando API...');
+      final result = await _apiService.getPets(token: token);
+      debugPrint('🐾 [fetchPets] Resultado: $result');
 
       if (result['success'] == true) {
-        final List<dynamic> petListJson = result['data'] as List<dynamic>;
+        final List<dynamic> petListJson = result['data'] as List<dynamic>? ?? [];
+        debugPrint('✅ [fetchPets] ${petListJson.length} mascotas recibidas');
         
-        // Mapear el JSON a la lista de objetos Mascota
         _pets = petListJson
             .map((json) => Mascota.fromJson(json as Map<String, dynamic>))
             .toList();
@@ -112,42 +114,43 @@ class PetController extends ChangeNotifier {
         notifyListeners();
         return null; // Éxito
       } else {
-        return result['message']?.toString() ?? 'Error al cargar mascotas desde el servidor.';
+        final msg = result['message']?.toString() ?? 'Error al cargar mascotas';
+        debugPrint('❌ [fetchPets] Error del servidor: $msg');
+        return msg;
       }
     } catch (e, st) {
-      debugPrint('PetController.fetchPets -> excepción: $e\n$st');
-      return 'Error de conexión o inesperado al obtener mascotas: ${e.toString()}';
+      debugPrint('❌ [fetchPets] Excepción: $e');
+      debugPrint('Stack: $st');
+      return 'Error inesperado: ${e.toString()}';
     }
   }
 
   Future<List<String>> getPetNames({bool forceRefresh = false}) async {
     try {
-      // Si ya tenemos mascotas en memoria y no forzamos, retornamos sus nombres
       if (!forceRefresh && _pets.isNotEmpty) {
         return _pets.map((p) => p.nombre).where((s) => s.isNotEmpty).toList();
       }
 
-      // Sino, pedir al API directamente
       final token = await _storage.read(key: 'jwt_token');
-      if (token == null || token.isEmpty) return [];
+      if (token == null || token.isEmpty) {
+        debugPrint('❌ [getPetNames] Token vacío');
+        return [];
+      }
 
       final result = await _apiService.getPets(token: token);
       if (result['success'] == true) {
-        final List<dynamic> list = result['data'] as List<dynamic>;
-
-        // Actualizar caché de mascotas
+        final List<dynamic> list = result['data'] as List<dynamic>? ?? [];
         _pets = list
             .map((json) => Mascota.fromJson(json as Map<String, dynamic>))
             .toList();
         notifyListeners();
-
-        // Extraer nombres directamente desde el modelo
         return _pets.map((p) => p.nombre).where((s) => s.isNotEmpty).toList();
       }
 
+      debugPrint('❌ [getPetNames] Error: ${result['message']}');
       return [];
     } catch (e, st) {
-      debugPrint('PetController.getPetNames -> excepción: $e\n$st');
+      debugPrint('❌ [getPetNames] Excepción: $e\n$st');
       return [];
     }
   }

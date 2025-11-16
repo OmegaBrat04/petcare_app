@@ -8,8 +8,8 @@ class Clinica{
   final double? lat;
   final double? lon;
   final String? descripcion;
-  final String? horarioApertura; // HH:mm:ss desde API
-  final String? horarioCierre;   // HH:mm:ss desde API
+  final String? horarioApertura; 
+  final String? horarioCierre;   
   final List<Servicios>? servicios;
 
   Clinica({

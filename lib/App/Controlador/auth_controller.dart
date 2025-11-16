@@ -25,6 +25,9 @@ class AuthController extends ChangeNotifier {
 
       if (result['success'] == true) {
         final token = result['token'] as String?;
+        if (token != null) {
+          await ApiService.saveToken(token);
+        }
         final userMap = result['user'] as Map<String, dynamic>?;
 
         if (token == null) return 'Token no recibido desde el servidor.';
@@ -44,6 +47,7 @@ class AuthController extends ChangeNotifier {
 
         try {
           final user = Usuarios.fromJson(userMap, token);
+          await ApiService.saveToken(token);
           debugPrint('Guardando token: $token');
           await _storage.write(key: 'jwt_token', value: token);
           _currentUser = user;

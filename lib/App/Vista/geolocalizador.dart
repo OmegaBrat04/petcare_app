@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import 'package:petcare_app/App/Controlador/mascota_controller.dart';
 import 'package:petcare_app/App/Modelo/Clinica.dart';
 import 'package:petcare_app/App/Servicios/api_service.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:petcare_app/App/Controlador/veterinaria_controller.dart';
 
 const _kPrimary = Color(0xFF2F76A6);
@@ -271,24 +272,24 @@ class _GeolocalizadorPageState extends State<GeolocalizadorPage> {
                 options: MapOptions(
                   initialCenter: _lastMapCenter,
                   initialZoom: _lastZoom,
-                      ),
-                      children: [
-                        TileLayer(
-                          urlTemplate:
-                              _mapType == 'streets'
-                                  ? 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
-                                  : 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-                          userAgentPackageName: 'com.example.petcare_app',
-                        ),
-                        MarkerLayer(markers: _markers),
-                      ],
-                    ),
-                     _FullScreenList(
-                      clinics: _clinicas,
-                      onOpen: _openClinicSheet,
-                      onRoute: (n) => _focusClinic(n),
-                      onTapCard: (n) => _focusClinic(n),
-                    ),
+                ),
+                children: [
+                  TileLayer(
+                    urlTemplate:
+                        _mapType == 'streets'
+                            ? 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
+                            : 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                    userAgentPackageName: 'com.example.petcare_app',
+                  ),
+                  MarkerLayer(markers: _markers),
+                ],
+              ),
+              _FullScreenList(
+                clinics: _clinicas,
+                onOpen: _openClinicSheet,
+                onRoute: (n) => _focusClinic(n),
+                onTapCard: (n) => _focusClinic(n),
+              ),
             ],
           ),
 
@@ -470,7 +471,6 @@ class _GeolocalizadorPageState extends State<GeolocalizadorPage> {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    
                   ],
                 ),
               ),
@@ -489,7 +489,6 @@ class _GeolocalizadorPageState extends State<GeolocalizadorPage> {
     DateTime? fechaSeleccionada;
     String? servicioSeleccionado;
 
-    // Servicios ejemplo (vendrían de la veterinaria)
     final servicios = (clinic.servicios ?? []).map((s) => s.name).toList();
 
     showModalBottomSheet(
@@ -499,6 +498,36 @@ class _GeolocalizadorPageState extends State<GeolocalizadorPage> {
       builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setState) {
+            Future<void> _enviar() async {
+              if (mascotaController.text.trim().isEmpty) {
+                _toast('Ingrese el nombre de la mascota');
+                return;
+              }
+              if (fechaSeleccionada == null) {
+                _toast('Seleccione una fecha');
+                return;
+              }
+              Navigator.pop(context);
+              final token = await ApiService.readToken();
+              if (token == null) {
+                _toast('Sesión expirada. Inicie sesión.');
+                return;
+              }
+              final r = await ApiService.crearCita(
+                veterinariaId: clinic.id,
+                mascotaNombre: mascotaController.text.trim(),
+                servicioNombre: servicioSeleccionado,
+                fechaPreferida: fechaSeleccionada!,
+                telefono: telefonoController.text.trim(),
+                notas: motivoController.text.trim(),
+              );
+              if (r['success'] == true) {
+                _toast('Cita solicitada correctamente');
+              } else {
+                _toast(r['message']?.toString() ?? 'No se pudo crear la cita');
+              }
+            }
+
             return Container(
               height: MediaQuery.of(context).size.height * 0.85,
               decoration: const BoxDecoration(
@@ -655,7 +684,6 @@ class _GeolocalizadorPageState extends State<GeolocalizadorPage> {
                             ),
                           ),
                           const SizedBox(height: 20),
-
                           // Fecha
                           _FormField(
                             title: 'Fecha preferida',
@@ -673,7 +701,7 @@ class _GeolocalizadorPageState extends State<GeolocalizadorPage> {
                                   builder: (context, child) {
                                     return Theme(
                                       data: Theme.of(context).copyWith(
-                                        colorScheme: ColorScheme.light(
+                                        colorScheme: const ColorScheme.light(
                                           primary: _kPrimary,
                                           onPrimary: Colors.white,
                                           surface: Colors.white,
@@ -697,8 +725,7 @@ class _GeolocalizadorPageState extends State<GeolocalizadorPage> {
                                   fechaSeleccionada == null
                                       ? 'Seleccione una fecha'
                                       : DateFormat(
-                                        'EEEE d MMMM, y',
-                                        'es',
+                                        'EEEE d \'de\' MMMM, y',
                                       ).format(fechaSeleccionada!),
                                 ),
                               ),
@@ -769,11 +796,7 @@ class _GeolocalizadorPageState extends State<GeolocalizadorPage> {
                         ),
                       ),
                       onPressed: () {
-                        // Aquí iría la lógica de envío
-                        Navigator.pop(context);
-                        _toast(
-                          'Solicitud enviada. La clínica confirmará el horario.',
-                        );
+                        _enviar();
                       },
                       child: const Text(
                         'Solicitar Cita',
@@ -805,9 +828,7 @@ String _formatHora(String? h) {
     if (parts.length >= 2) {
       return '${parts[0].padLeft(2, '0')}:${parts[1].padLeft(2, '0')}';
     }
-  } catch (e) {
-    debugPrint('Error formateando hora: $e');
-  }
+  } catch (_) {}
   return h;
 }
 
@@ -1231,7 +1252,6 @@ class _ClinicCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  
                 ],
               ),
             ],

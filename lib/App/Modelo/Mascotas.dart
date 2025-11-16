@@ -1,51 +1,82 @@
+import 'package:flutter/material.dart';
+
 class Mascota {
   final int idMascota;
-  final int idUsuario;
+  final int? idUsuario;
   final String nombre;
-  final String especie;
+  final String? especie;       
   final String? raza;
-  final String sexo;
-  final int edad;
+  final String? sexo;         
+  final int? edad;
   final int? peso;
-  final String? fotoURL; // La URL o ruta después de subirla
+  final String? fotoURL;
   final DateTime? fechaNacimiento;
-  final DateTime fechaRegistro;
+  final DateTime? fechaRegistro; 
 
   Mascota({
     required this.idMascota,
-    required this.idUsuario,
+    this.idUsuario,
     required this.nombre,
-    required this.especie,
-    required this.sexo,
-    this.raza,
-    required this.edad,
-    this.peso,
     this.fotoURL,
+    this.especie,
+    this.sexo,
+    this.raza,
+    this.edad,
+    this.peso,
     this.fechaNacimiento,
-    required this.fechaRegistro,
+    this.fechaRegistro,
   });
 
-  // Método para crear un objeto Pet a partir del JSON de la API
   factory Mascota.fromJson(Map<String, dynamic> json) {
-    return Mascota(
-      idMascota: json['IdMascota'],
-      idUsuario: json['IdUsuario'],
-      nombre: json['Nombre'],
-      especie: json['Especie'],
-      sexo: json['Sexo'],
-      edad:
-          (json['Edad'] != null && json['Edad'] is int)
-              ? json['Edad'] as int
-              : int.tryParse(json['Edad']?.toString() ?? '0') ?? 0,
-      raza: json['Raza'],
-      peso: json['Peso'] != null ? int.tryParse(json['Peso'].toString()) : null,
-      fotoURL: json['Foto'],
-      // Conversión de string a DateTime (ajustar formato si es necesario)
-      fechaNacimiento:
-          json['FechaNacimiento'] != null
-              ? DateTime.tryParse(json['FechaNacimiento'])
-              : null,
-      fechaRegistro: DateTime.parse(json['FechaRegistro']),
-    );
+    try {
+      debugPrint('🔍 Parseando mascota: ${json['nombre']}');
+      debugPrint('  - id: ${json['id']} (${json['id'].runtimeType})');
+      debugPrint('  - idUsuario: ${json['idUsuario']} (${json['idUsuario']?.runtimeType})');
+      debugPrint('  - edad: ${json['edad']} (${json['edad']?.runtimeType})');
+      debugPrint('  - peso: ${json['peso']} (${json['peso']?.runtimeType})');
+      
+      return Mascota(
+        idMascota: json['id'] as int,
+        idUsuario: json['idUsuario'] as int?,
+        nombre: json['nombre'] as String? ?? '',
+        especie: json['especie'] as String?,
+        sexo: json['sexo'] as String?,
+        edad: json['edad'] as int?,
+        raza: json['raza'] as String?,
+        peso: json['peso'] != null 
+            ? (json['peso'] is int 
+                ? json['peso'] as int 
+                : int.tryParse(json['peso'].toString()))
+            : null,
+        fotoURL: json['foto'] as String?,
+        fechaNacimiento: json['fechaNacimiento'] != null
+            ? DateTime.tryParse(json['fechaNacimiento'] as String)
+            : null,
+        fechaRegistro: json['fechaRegistro'] != null
+            ? DateTime.tryParse(json['fechaRegistro'] as String)
+            : null,
+      );
+    } catch (e, st) {
+      debugPrint('❌ Error parseando mascota: $e');
+      debugPrint('JSON: $json');
+      debugPrint('Stack: $st');
+      rethrow;
+    }
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': idMascota,
+      'idUsuario': idUsuario,
+      'nombre': nombre,
+      'foto': fotoURL,
+      'especie': especie,
+      'raza': raza,
+      'sexo': sexo,
+      'edad': edad,
+      'peso': peso,
+      'fechaNacimiento': fechaNacimiento?.toIso8601String(),
+      'fechaRegistro': fechaRegistro?.toIso8601String(),
+    };
   }
 }

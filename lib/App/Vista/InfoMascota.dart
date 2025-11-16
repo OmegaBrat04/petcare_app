@@ -435,8 +435,8 @@ class _MascotaDetailScreenState extends State<MascotaDetailScreen>
 
   /* ===================== Header con foto ===================== */
   Widget _headerCard(BuildContext context, Mascota p) {
-    final especie = p.especie.isEmpty ? '—' : p.especie;
-    final sexo = p.sexo.isEmpty ? '—' : p.sexo;
+    final especie = p.especie ?? '—';
+    final sexo = p.sexo ?? '—';
     final peso = p.peso?.toString() ?? '—';
 
     return Material(
@@ -501,7 +501,7 @@ class _MascotaDetailScreenState extends State<MascotaDetailScreen>
                           children: [
                             _chip(
                               context,
-                              Icons.catching_pokemon,
+                              Icons.pets,
                               'Especie',
                               especie,
                             ),
@@ -567,11 +567,11 @@ class _MascotaDetailScreenState extends State<MascotaDetailScreen>
       children: [
         _infoCard(context, 'Datos de la Mascota', [
           _kv('Nombre', p.nombre),
-          _kv('Especie', p.especie),
+          _kv('Especie', p.especie ?? '—'),
           _kv('Raza', p.raza ?? '—'),
-          _kv('Sexo', p.sexo),
-          //_kv('Edad', '${p.edad} años'),
-          _kv('Peso', '${p.peso ?? '—'} kg'),
+          _kv('Sexo', p.sexo ?? '—'),
+          _kv('Edad', '${p.edad} años'),
+          _kv('Peso', p.peso != null ? '${p.peso} kg' : '—'),
           _kv(
             'Fecha de nacimiento',
             p.fechaNacimiento?.toIso8601String().split('T')[0] ?? '—',

@@ -121,9 +121,9 @@ class ApiService {
   }
 
   // ------------------------------ OBTENER MASCOTAS ------------------------------
- Future<Map<String, dynamic>> getPets({required String token}) async {
+  Future<Map<String, dynamic>> getPets({required String token}) async {
     final url = Uri.parse('$_baseUrl/mascotas');
-    
+
     debugPrint('🐾 [getPets] URL: $url');
     debugPrint('🐾 [getPets] Token: ${token.substring(0, 20)}...');
 
@@ -137,7 +137,9 @@ class ApiService {
       );
 
       debugPrint('🐾 [getPets] Status: ${response.statusCode}');
-      debugPrint('🐾 [getPets] Body (primeros 200 chars): ${response.body.length > 200 ? response.body.substring(0, 200) : response.body}');
+      debugPrint(
+        '🐾 [getPets] Body (primeros 200 chars): ${response.body.length > 200 ? response.body.substring(0, 200) : response.body}',
+      );
 
       // Si la respuesta no es 200, NO intentes decodificar como JSON exitoso
       if (response.statusCode != 200) {
@@ -174,10 +176,7 @@ class ApiService {
     } catch (e, st) {
       debugPrint('❌ [getPets] Exception: $e');
       debugPrint('Stack: $st');
-      return {
-        'success': false,
-        'message': 'Error de conexión: $e',
-      };
+      return {'success': false, 'message': 'Error de conexión: $e'};
     }
   }
 
@@ -198,16 +197,10 @@ class ApiService {
   static Future<Map<String, dynamic>> getVeterinarias() async {
     try {
       final clinicas = await getClinicas();
-      return {
-        'success': true,
-        'data': clinicas.map((c) => c.toMap()).toList(),
-      };
+      return {'success': true, 'data': clinicas.map((c) => c.toMap()).toList()};
     } catch (e) {
       debugPrint('❌ [getVeterinarias] Error: $e');
-      return {
-        'success': false,
-        'message': 'Error al cargar veterinarias: $e',
-      };
+      return {'success': false, 'message': 'Error al cargar veterinarias: $e'};
     }
   }
 
@@ -227,7 +220,6 @@ class ApiService {
     await _storage.delete(key: 'jwt_token');
     await _storage.delete(key: 'token');
   }
-
 
   static Future<Map<String, String>> _authHeaders() async {
     final token = await readToken();
@@ -282,13 +274,17 @@ class ApiService {
     if (status != null) queryParams['status'] = status;
     if (mascotaId != null) queryParams['mascota_id'] = mascotaId.toString();
     if (desde != null) {
-      queryParams['desde'] = '${desde.year}-${desde.month.toString().padLeft(2, '0')}-${desde.day.toString().padLeft(2, '0')}';
+      queryParams['desde'] =
+          '${desde.year}-${desde.month.toString().padLeft(2, '0')}-${desde.day.toString().padLeft(2, '0')}';
     }
     if (hasta != null) {
-      queryParams['hasta'] = '${hasta.year}-${hasta.month.toString().padLeft(2, '0')}-${hasta.day.toString().padLeft(2, '0')}';
+      queryParams['hasta'] =
+          '${hasta.year}-${hasta.month.toString().padLeft(2, '0')}-${hasta.day.toString().padLeft(2, '0')}';
     }
 
-    final url = Uri.parse('$_baseUrl/citas').replace(queryParameters: queryParams.isNotEmpty ? queryParams : null);
+    final url = Uri.parse(
+      '$_baseUrl/citas',
+    ).replace(queryParameters: queryParams.isNotEmpty ? queryParams : null);
     final headers = await _authHeaders();
 
     debugPrint('📋 [getCitas] URL: $url');
@@ -300,22 +296,34 @@ class ApiService {
       if (res.statusCode != 200) {
         try {
           final errorBody = json.decode(res.body) as Map<String, dynamic>;
-          return {'success': false, 'message': errorBody['message'] ?? 'Error ${res.statusCode}'};
+          return {
+            'success': false,
+            'message': errorBody['message'] ?? 'Error ${res.statusCode}',
+          };
         } catch (_) {
-          return {'success': false, 'message': 'Error ${res.statusCode}: ${res.body}'};
+          return {
+            'success': false,
+            'message': 'Error ${res.statusCode}: ${res.body}',
+          };
         }
       }
 
       final responseBody = json.decode(res.body) as Map<String, dynamic>;
       debugPrint('📋 [getCitas] Data: ${responseBody['data']}');
-      return {'success': responseBody['success'] ?? true, 'data': responseBody['data'] ?? []};
+      return {
+        'success': responseBody['success'] ?? true,
+        'data': responseBody['data'] ?? [],
+      };
     } catch (e, st) {
       debugPrint('❌ [getCitas] Exception: $e\n$st');
       return {'success': false, 'message': 'Error de conexión: $e'};
     }
   }
 
-  static Future<Map<String, dynamic>> updateCitaStatus(int citaId, String status) async {
+  static Future<Map<String, dynamic>> updateCitaStatus(
+    int citaId,
+    String status,
+  ) async {
     final url = Uri.parse('$_baseUrl/citas/$citaId/status');
     final headers = await _authHeaders();
     final body = {'status': status};
@@ -323,9 +331,13 @@ class ApiService {
     debugPrint('📋 [updateCitaStatus] URL: $url, status: $status');
 
     try {
-      final res = await http.patch(url, headers: headers, body: json.encode(body));
+      final res = await http.patch(
+        url,
+        headers: headers,
+        body: json.encode(body),
+      );
       debugPrint('📋 [updateCitaStatus] Status: ${res.statusCode}');
-      
+
       return json.decode(res.body) as Map<String, dynamic>;
     } catch (e, st) {
       debugPrint('❌ [updateCitaStatus] Exception: $e\n$st');
@@ -342,7 +354,7 @@ class ApiService {
     try {
       final res = await http.delete(url, headers: headers);
       debugPrint('📋 [deleteCita] Status: ${res.statusCode}');
-      
+
       return json.decode(res.body) as Map<String, dynamic>;
     } catch (e, st) {
       debugPrint('❌ [deleteCita] Exception: $e\n$st');
@@ -350,6 +362,46 @@ class ApiService {
     }
   }
 
+  static Future<Map<String, dynamic>> reagendarCita(
+    int citaId,
+    DateTime nuevaFechaHora,
+  ) async {
+    final url = Uri.parse('$_baseUrl/citas/$citaId/reagendar');
+    final headers = await _authHeaders();
 
+    final String fecha =
+        '${nuevaFechaHora.year.toString().padLeft(4, '0')}-'
+        '${nuevaFechaHora.month.toString().padLeft(2, '0')}-'
+        '${nuevaFechaHora.day.toString().padLeft(2, '0')}';
 
+    final body = {
+      'fecha_preferida': fecha,
+      'horario_confirmado': nuevaFechaHora.toIso8601String(),
+    };
+
+    try {
+      final res = await http.patch(
+        url,
+        headers: headers,
+        body: json.encode(body),
+      );
+      if (res.statusCode != 200) {
+        try {
+          final err = json.decode(res.body) as Map<String, dynamic>;
+          return {
+            'success': false,
+            'message': err['message'] ?? 'Error ${res.statusCode}',
+          };
+        } catch (_) {
+          return {
+            'success': false,
+            'message': 'Error ${res.statusCode}: ${res.body}',
+          };
+        }
+      }
+      return json.decode(res.body) as Map<String, dynamic>;
+    } catch (e) {
+      return {'success': false, 'message': 'Error de conexión: $e'};
+    }
+  }
 }

@@ -13,11 +13,25 @@ const _kPrimary = Color(0xFF2F76A6);
 const _kPrimaryDark = Color(0xFF0E3A5C);
 const _kBg = Color(0xFFF7F9FC);
 
-const _h1 = TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.black87);
-const _h2 = TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.black87);
-const _body = TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black87);
+const _h1 = TextStyle(
+  fontSize: 22,
+  fontWeight: FontWeight.w900,
+  color: Colors.black87,
+);
+const _h2 = TextStyle(
+  fontSize: 16,
+  fontWeight: FontWeight.w800,
+  color: Colors.black87,
+);
+const _body = TextStyle(
+  fontSize: 14,
+  fontWeight: FontWeight.w600,
+  color: Colors.black87,
+);
 
-RoundedRectangleBorder _surface16 = RoundedRectangleBorder(borderRadius: BorderRadius.circular(16));
+RoundedRectangleBorder _surface16 = RoundedRectangleBorder(
+  borderRadius: BorderRadius.circular(16),
+);
 
 class CitasPage extends StatefulWidget {
   const CitasPage({super.key});
@@ -27,6 +41,53 @@ class CitasPage extends StatefulWidget {
 }
 
 class _CitasPageState extends State<CitasPage> {
+  String _query = '';
+
+  List<Cita> _filterCitas(
+    List<Cita> source,
+    String q,
+    List<Mascota> mascotas,
+    List<Clinica> vets,
+  ) {
+    final query = q.trim().toLowerCase();
+    if (query.isEmpty) return source;
+
+    String petName(int id) {
+      try {
+        return mascotas.firstWhere((m) => m.idMascota == id).nombre;
+      } catch (_) {
+        return '';
+      }
+    }
+
+    String vetName(int id) {
+      try {
+        return vets.firstWhere((v) => v.id == id).name;
+      } catch (_) {
+        return '';
+      }
+    }
+
+    return source.where((c) {
+      final pet = petName(c.mascotaId).toLowerCase();
+      final vet = vetName(c.veterinariaId).toLowerCase();
+      final fecha =
+          DateFormat('dd/MM/yyyy').format(c.fechaPreferida).toLowerCase();
+      return pet.contains(query) ||
+          vet.contains(query) ||
+          fecha.contains(query);
+    }).toList();
+  }
+
+  Map<String, List<Cita>> _groupByDate(List<Cita> list) {
+    final Map<String, List<Cita>> out = {};
+    for (final c in list) {
+      final key = DateFormat('dd/MM/yyyy').format(c.fechaPreferida);
+      out.putIfAbsent(key, () => []).add(c);
+    }
+    return out;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -44,7 +105,10 @@ class _CitasPageState extends State<CitasPage> {
     return Scaffold(
       backgroundColor: _kBg,
       appBar: AppBar(
-        title: const Text('Citas', style: TextStyle(fontWeight: FontWeight.w800)),
+        title: const Text(
+          'Citas',
+          style: TextStyle(fontWeight: FontWeight.w800),
+        ),
         centerTitle: true,
         elevation: 0,
         backgroundColor: _kBg,
@@ -75,8 +139,36 @@ class _CitasPageState extends State<CitasPage> {
             );
           }
 
-          final proxima = citasCtrl.proximaCita;
-          final citasPorFecha = citasCtrl.citasPorFecha;
+          final List<Mascota> mascotas =
+              (petCtrl.pets.isNotEmpty ? petCtrl.pets : petCtrl.items)
+                  .cast<Mascota>();
+          final List<Clinica> veterinarias = vetCtrl.veterinarias;
+
+          final filtradas = _filterCitas(
+            citasCtrl.citas,
+            _query,
+            mascotas,
+            veterinarias,
+          );
+          final citasPorFecha = _groupByDate(filtradas);
+
+          Cita? proxima;
+          if (filtradas.isNotEmpty) {
+            final ahora = DateTime.now();
+            final futuras =
+                filtradas
+                    .where(
+                      (c) =>
+                          (c.estatus == Estatus.pending ||
+                              c.estatus == Estatus.confirmed) &&
+                          c.fechaPreferida.isAfter(ahora),
+                    )
+                    .toList()
+                  ..sort(
+                    (a, b) => a.fechaPreferida.compareTo(b.fechaPreferida),
+                  );
+            if (futuras.isNotEmpty) proxima = futuras.first;
+          }
 
           return RefreshIndicator(
             onRefresh: () => citasCtrl.fetchCitas(),
@@ -86,11 +178,14 @@ class _CitasPageState extends State<CitasPage> {
                 if (proxima != null)
                   _NextCard(
                     cita: proxima,
-                    mascotas: petCtrl.items,
-                    veterinarias: vetCtrl.veterinarias,
+                    mascotas: mascotas,
+                    veterinarias: veterinarias,
                   ),
                 if (proxima != null) const SizedBox(height: 12),
-                _FiltersBar(),
+                _FiltersBar(
+                  query: _query,
+                  onSearchChanged: (q) => setState(() => _query = q),
+                ),
                 const SizedBox(height: 12),
                 const _DateStrip(),
                 const SizedBox(height: 12),
@@ -108,8 +203,8 @@ class _CitasPageState extends State<CitasPage> {
                       child: _DayGroup(
                         title: entry.key,
                         citas: entry.value,
-                        mascotas: petCtrl.items,
-                        veterinarias: vetCtrl.veterinarias,
+                        mascotas: mascotas,
+                        veterinarias: veterinarias,
                       ),
                     );
                   }).toList(),
@@ -137,10 +232,13 @@ class _NextCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final citasCtrl = context.read<CitasController>();
     final mascotaNombre = citasCtrl.getMascotaNombre(cita.mascotaId, mascotas);
-    final vetNombre = citasCtrl.getVeterinariaNombre(cita.veterinariaId, veterinarias);
+    final vetNombre = citasCtrl.getVeterinariaNombre(
+      cita.veterinariaId,
+      veterinarias,
+    );
     final inicial = citasCtrl.getPetInitial(cita.mascotaId, mascotas);
     final diasFaltantes = cita.fechaPreferida.difference(DateTime.now()).inDays;
-    
+
     return Container(
       decoration: BoxDecoration(
         gradient: const LinearGradient(
@@ -159,7 +257,11 @@ class _NextCard extends StatelessWidget {
               backgroundColor: Colors.white,
               child: Text(
                 inicial,
-                style: const TextStyle(color: _kPrimaryDark, fontWeight: FontWeight.w900, fontSize: 22),
+                style: const TextStyle(
+                  color: _kPrimaryDark,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 22,
+                ),
               ),
             ),
             const SizedBox(width: 12),
@@ -167,20 +269,35 @@ class _NextCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Próxima cita', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w700)),
-                  const SizedBox(height: 2),
-                  Text(
-                    '$mascotaNombre • Consulta',
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16),
+                  const Text(
+                    'Próxima cita',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    DateFormat('dd/MM/yyyy • HH:mm').format(cita.horarioConfirmado ?? cita.fechaPreferida),
+                    '$mascotaNombre • Consulta',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    DateFormat(
+                      'dd/MM/yyyy • HH:mm',
+                    ).format(cita.horarioConfirmado ?? cita.fechaPreferida),
                     style: const TextStyle(color: Colors.white),
                   ),
                   Text(
                     vetNombre,
-                    style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w600),
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
               ),
@@ -223,7 +340,10 @@ class _Pill extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(999)),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(999),
+      ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -240,7 +360,11 @@ class _RoundBtn extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
-  const _RoundBtn({required this.icon, required this.label, required this.onTap});
+  const _RoundBtn({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -282,14 +406,16 @@ class _DayGroup extends StatelessWidget {
           padding: const EdgeInsets.only(left: 12, bottom: 6),
           child: Text(title, style: _h2),
         ),
-        ...citas.map((c) => Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: _ApptCard(
-                cita: c,
-                mascotas: mascotas,
-                veterinarias: veterinarias,
-              ),
-            )),
+        ...citas.map(
+          (c) => Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: _ApptCard(
+              cita: c,
+              mascotas: mascotas,
+              veterinarias: veterinarias,
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -310,10 +436,15 @@ class _ApptCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final citasCtrl = context.read<CitasController>();
     final mascotaNombre = citasCtrl.getMascotaNombre(cita.mascotaId, mascotas);
-    final vetNombre = citasCtrl.getVeterinariaNombre(cita.veterinariaId, veterinarias);
+    final vetNombre = citasCtrl.getVeterinariaNombre(
+      cita.veterinariaId,
+      veterinarias,
+    );
     final inicial = citasCtrl.getPetInitial(cita.mascotaId, mascotas);
-    final horaStr = DateFormat('HH:mm').format(cita.horarioConfirmado ?? cita.fechaPreferida);
-    
+    final horaStr = DateFormat(
+      'HH:mm',
+    ).format(cita.horarioConfirmado ?? cita.fechaPreferida);
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -322,7 +453,10 @@ class _ApptCard extends StatelessWidget {
             Container(
               width: 10,
               height: 10,
-              decoration: BoxDecoration(color: cita.statusColor, shape: BoxShape.circle),
+              decoration: BoxDecoration(
+                color: cita.statusColor,
+                shape: BoxShape.circle,
+              ),
             ),
             Container(
               width: 2,
@@ -346,7 +480,10 @@ class _ApptCard extends StatelessWidget {
                     backgroundColor: _kPrimary.withOpacity(.12),
                     child: Text(
                       inicial,
-                      style: const TextStyle(color: _kPrimaryDark, fontWeight: FontWeight.w900),
+                      style: const TextStyle(
+                        color: _kPrimaryDark,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -354,10 +491,7 @@ class _ApptCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          '$mascotaNombre • Consulta',
-                          style: _h2,
-                        ),
+                        Text('$mascotaNombre • Consulta', style: _h2),
                         const SizedBox(height: 4),
                         Text(
                           '${DateFormat('dd/MM/yyyy').format(cita.fechaPreferida)} • $horaStr',
@@ -371,11 +505,17 @@ class _ApptCard extends StatelessWidget {
                         const SizedBox(height: 8),
                         Row(
                           children: [
-                            _StatusChip(label: cita.statusLabel, color: cita.statusColor),
+                            _StatusChip(
+                              label: cita.statusLabel,
+                              color: cita.statusColor,
+                            ),
                             const SizedBox(width: 3),
                             TextButton.icon(
                               onPressed: () => _showNotas(context, cita),
-                              icon: const Icon(Icons.article_outlined, size: 18),
+                              icon: const Icon(
+                                Icons.article_outlined,
+                                size: 18,
+                              ),
                               label: const Text('Indicaciones'),
                             ),
                           ],
@@ -385,11 +525,17 @@ class _ApptCard extends StatelessWidget {
                   ),
                   PopupMenuButton<String>(
                     onSelected: (v) => _handleMenu(context, v, cita),
-                    itemBuilder: (ctx) => const [
-                      PopupMenuItem(value: 'confirm', child: Text('Confirmar')),
-                      PopupMenuItem(value: 'cancel', child: Text('Cancelar')),
-                      PopupMenuItem(value: 'delete', child: Text('Eliminar')),
-                    ],
+                    itemBuilder:
+                        (ctx) => const [
+                          PopupMenuItem(
+                            value: 'reschedule',
+                            child: Text('Reagendar'),
+                          ),
+                          PopupMenuItem(
+                            value: 'cancel',
+                            child: Text('Cancelar'),
+                          ),
+                        ],
                     child: const Icon(Icons.more_horiz),
                   ),
                 ],
@@ -423,13 +569,16 @@ class _StatusChip extends StatelessWidget {
             label == 'Pendiente'
                 ? Icons.hourglass_bottom
                 : label == 'Confirmada'
-                    ? Icons.check_circle
-                    : Icons.cancel,
+                ? Icons.check_circle
+                : Icons.cancel,
             size: 16,
             color: color,
           ),
           const SizedBox(width: 6),
-          Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w900)),
+          Text(
+            label,
+            style: TextStyle(color: color, fontWeight: FontWeight.w900),
+          ),
         ],
       ),
     );
@@ -438,13 +587,21 @@ class _StatusChip extends StatelessWidget {
 
 /// ====== Barra de filtros ======
 class _FiltersBar extends StatelessWidget {
+  final String query;
+  final ValueChanged<String> onSearchChanged;
+  const _FiltersBar({required this.query, required this.onSearchChanged});
   @override
   Widget build(BuildContext context) {
     return Consumer2<CitasController, PetController>(
       builder: (context, citasCtrl, petCtrl, _) {
         return Column(
           children: [
-            const _SearchBar(hint: 'Buscar clínica, mascota o fecha…'),
+            _SearchBar(
+              hint: 'Buscar clínica, mascota o fecha…',
+              text: query,
+              onChanged: onSearchChanged,
+              onClear: () => onSearchChanged(''),
+            ),
             const SizedBox(height: 10),
             _Segment(
               title: 'Estado',
@@ -453,41 +610,52 @@ class _FiltersBar extends StatelessWidget {
                   text: 'Pendiente',
                   color: Colors.orange,
                   active: citasCtrl.statusFilter == 'pending',
-                  onTap: () => citasCtrl.setStatusFilter(
-                    citasCtrl.statusFilter == 'pending' ? null : 'pending',
-                  ),
+                  onTap:
+                      () => citasCtrl.setStatusFilter(
+                        citasCtrl.statusFilter == 'pending' ? null : 'pending',
+                      ),
                 ),
                 _ChipFilter(
                   text: 'Confirmada',
                   color: Colors.green,
                   active: citasCtrl.statusFilter == 'confirmed',
-                  onTap: () => citasCtrl.setStatusFilter(
-                    citasCtrl.statusFilter == 'confirmed' ? null : 'confirmed',
-                  ),
+                  onTap:
+                      () => citasCtrl.setStatusFilter(
+                        citasCtrl.statusFilter == 'confirmed'
+                            ? null
+                            : 'confirmed',
+                      ),
                 ),
                 _ChipFilter(
                   text: 'Cancelada',
                   color: Colors.red,
                   active: citasCtrl.statusFilter == 'cancelled',
-                  onTap: () => citasCtrl.setStatusFilter(
-                    citasCtrl.statusFilter == 'cancelled' ? null : 'cancelled',
-                  ),
+                  onTap:
+                      () => citasCtrl.setStatusFilter(
+                        citasCtrl.statusFilter == 'cancelled'
+                            ? null
+                            : 'cancelled',
+                      ),
                 ),
               ],
             ),
             const SizedBox(height: 6),
             _Segment(
               title: 'Mascota',
-              chips: petCtrl.pets.map((pet) {
-                return _ChipFilter(
-                  text: pet.nombre,
-                  color: _kPrimary,
-                  active: citasCtrl.mascotaFilter == pet.idMascota,
-                  onTap: () => citasCtrl.setMascotaFilter(
-                    citasCtrl.mascotaFilter == pet.idMascota ? null : pet.idMascota,
-                  ),
-                );
-              }).toList(),
+              chips:
+                  petCtrl.pets.map((pet) {
+                    return _ChipFilter(
+                      text: pet.nombre,
+                      color: _kPrimary,
+                      active: citasCtrl.mascotaFilter == pet.idMascota,
+                      onTap:
+                          () => citasCtrl.setMascotaFilter(
+                            citasCtrl.mascotaFilter == pet.idMascota
+                                ? null
+                                : pet.idMascota,
+                          ),
+                    );
+                  }).toList(),
             ),
           ],
         );
@@ -496,9 +664,48 @@ class _FiltersBar extends StatelessWidget {
   }
 }
 
-class _SearchBar extends StatelessWidget {
+class _SearchBar extends StatefulWidget {
   final String hint;
-  const _SearchBar({required this.hint});
+  final String text;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onClear;
+  const _SearchBar({
+    required this.hint,
+    required this.text,
+    required this.onChanged,
+    required this.onClear,
+  });
+
+  @override
+  State<_SearchBar> createState() => _SearchBarState();
+}
+
+class _SearchBarState extends State<_SearchBar> {
+  late final TextEditingController _ctl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctl = TextEditingController(text: widget.text);
+    _ctl.addListener(() => widget.onChanged(_ctl.text));
+  }
+
+  @override
+  void didUpdateWidget(covariant _SearchBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.text != widget.text && _ctl.text != widget.text) {
+      _ctl.text = widget.text;
+      _ctl.selection = TextSelection.fromPosition(
+        TextPosition(offset: _ctl.text.length),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -511,7 +718,11 @@ class _SearchBar extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: Colors.black12),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(.05), blurRadius: 12, offset: const Offset(0, 6))
+            BoxShadow(
+              color: Colors.black.withOpacity(.05),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
           ],
         ),
         child: Row(
@@ -520,12 +731,27 @@ class _SearchBar extends StatelessWidget {
             const Icon(Icons.search, color: _kPrimaryDark, size: 20),
             const SizedBox(width: 8),
             Expanded(
-              child: Text(hint, style: const TextStyle(color: Colors.black38, fontWeight: FontWeight.w600)),
+              child: TextField(
+                controller: _ctl,
+                decoration: InputDecoration(
+                  hintText: widget.hint,
+                  border: InputBorder.none,
+                  isCollapsed: true,
+                ),
+                style: const TextStyle(
+                  color: Colors.black87,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
             IconButton(
-              onPressed: () => context.read<CitasController>().clearFilters(),
+              onPressed: () {
+                _ctl.clear();
+                widget.onClear();
+              },
               icon: const Icon(Icons.close_rounded, color: Colors.blueGrey),
               splashRadius: 18,
+              tooltip: 'Limpiar',
             ),
           ],
         ),
@@ -635,8 +861,14 @@ class _DateStripState extends State<_DateStrip> {
             });
           },
           calendarStyle: const CalendarStyle(
-            selectedDecoration: BoxDecoration(color: _kPrimary, shape: BoxShape.circle),
-            todayDecoration: BoxDecoration(color: _kPrimaryDark, shape: BoxShape.circle),
+            selectedDecoration: BoxDecoration(
+              color: _kPrimary,
+              shape: BoxShape.circle,
+            ),
+            todayDecoration: BoxDecoration(
+              color: _kPrimaryDark,
+              shape: BoxShape.circle,
+            ),
           ),
         ),
       ),
@@ -651,47 +883,58 @@ void _toast(BuildContext context, String msg) {
 void _showNotas(BuildContext context, Cita cita) {
   showDialog(
     context: context,
-    builder: (ctx) => AlertDialog(
-      title: const Text('Indicaciones'),
-      content: Text(cita.notas?.isNotEmpty == true ? cita.notas! : 'Sin indicaciones'),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cerrar')),
-      ],
-    ),
+    builder:
+        (ctx) => AlertDialog(
+          title: const Text('Indicaciones'),
+          content: Text(
+            cita.notas?.isNotEmpty == true ? cita.notas! : 'Sin indicaciones',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cerrar'),
+            ),
+          ],
+        ),
   );
 }
 
 void _handleMenu(BuildContext context, String action, Cita cita) async {
   final citasCtrl = context.read<CitasController>();
-  
+
   switch (action) {
-    case 'confirm':
-      final ok = await citasCtrl.updateStatus(cita.id, 'confirmed');
-      _toast(context, ok ? 'Cita confirmada' : 'Error al confirmar');
+    case 'reschedule':
+      // Elegir fecha
+      final pickedDate = await showDatePicker(
+        context: context,
+        initialDate: cita.horarioConfirmado ?? cita.fechaPreferida,
+        firstDate: DateTime.now().subtract(const Duration(days: 0)),
+        lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+      );
+      if (pickedDate == null) return;
+
+      final pickedTime = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.fromDateTime(
+          cita.horarioConfirmado ?? cita.fechaPreferida,
+        ),
+      );
+
+      DateTime newDateTime = DateTime(
+        pickedDate.year,
+        pickedDate.month,
+        pickedDate.day,
+        (pickedTime?.hour ?? 9),
+        (pickedTime?.minute ?? 0),
+      );
+
+      final ok = await citasCtrl.reagendar(cita.id, newDateTime);
+      _toast(context, ok ? 'Cita reagendada' : 'No se pudo reagendar');
       break;
+
     case 'cancel':
       final ok = await citasCtrl.updateStatus(cita.id, 'cancelled');
       _toast(context, ok ? 'Cita cancelada' : 'Error al cancelar');
-      break;
-    case 'delete':
-      final confirm = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('¿Eliminar cita?'),
-          content: const Text('Esta acción no se puede deshacer.'),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
-            ),
-          ],
-        ),
-      );
-      if (confirm == true) {
-        final ok = await citasCtrl.deleteCita(cita.id);
-        _toast(context, ok ? 'Cita eliminada' : 'Error al eliminar');
-      }
       break;
   }
 }

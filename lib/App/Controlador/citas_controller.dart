@@ -146,4 +146,24 @@ class CitasController extends ChangeNotifier {
       return false;
     }
   }
+
+  Future<bool> reagendar(int citaId, DateTime nuevaFechaHora) async {
+    try {
+      final r = await ApiService.reagendarCita(
+        citaId,
+        nuevaFechaHora,
+      );
+      if (r['success'] == true) {
+        await fetchCitas();
+        return true;
+      }
+      _error = r['message']?.toString() ?? 'Error al reagendar';
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
 }

@@ -909,60 +909,45 @@ export default function AgregarVeterinariaUI() {
     }
   };
 
-  // 🚨 FUNCIÓN DE ENVÍO DE DATOS
+// 🚨 FUNCIÓN DE ENVÍO DE DATOS (CON USUARIO ID)
   const handleEnviarVerificacion = async () => {
     const finalValidationErrors: string[] = [];
-    if (!isNameValid(formData.nombreResponsable))
-      finalValidationErrors.push("Nombre del responsable");
-    if (!isPhoneValid(formData.telefonoResponsable))
-      finalValidationErrors.push("Teléfono del responsable");
-    if (!isRestrictedEmailValid(formData.emailResponsable, ALLOWED_DOMAINS))
-      finalValidationErrors.push("Email del responsable");
-    if (!formData.nombreComercial.trim())
-      finalValidationErrors.push("Nombre comercial");
-    if (scheduleList.length === 0)
-      finalValidationErrors.push("Al menos un horario");
-    if (!formData.calle.trim()) finalValidationErrors.push("Calle");
-    if (!formData.ciudad.trim()) finalValidationErrors.push("Ciudad");
-    if (!isPhoneValid(formData.telefonoClinica))
-      finalValidationErrors.push("Teléfono de la clínica");
-    if (!isGeneralEmailValid(formData.emailClinica))
-      finalValidationErrors.push("Email de la clínica");
-    if (servicesList.length === 0)
-      finalValidationErrors.push("Al menos un servicio");
+    if (!formData.nombreComercial) finalValidationErrors.push("Nombre comercial");
+    if (!formData.emailResponsable) finalValidationErrors.push("Email del responsable");
+    if (servicesList.length === 0) finalValidationErrors.push("Al menos un servicio");
 
     if (finalValidationErrors.length > 0) {
       setAlertInfo({
-        title: "PetCare Manager",
+        title: "Faltan datos",
         message:
-          "Aún faltan campos obligatorios antes de enviar:\n\n• " +
+          "Por favor completa los campos obligatorios antes de enviar:\n\n• " +
           finalValidationErrors.join("\n• "),
       });
       return;
     }
 
     try {
-      // 1. CONSOLIDAR EL PAYLOAD
+      // --- CAMBIO SOLICITADO: RECUPERAR ID DEL LOCALSTORAGE ---
+      const usuarioId = localStorage.getItem('idUsuario');
+      
       const payload = {
         ...formData,
         servicios: servicesList.filter((s) => s.activo),
         horarios: scheduleList,
         logoUrl: logoUrl,
+        // --- CAMBIO SOLICITADO: ENVIARLO EN EL PAYLOAD ---
+        usuarioWebID: usuarioId ? parseInt(usuarioId) : null 
       };
 
-      console.log("Enviando Payload:", payload);
+      console.log("Enviando payload:", payload); // Para que verifiques en consola
 
-      // 2. HACER LA PETICIÓN FETCH
       const response = await fetch(API_ENDPOINTS.veterinarias.registro, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
-      // 3. MANEJAR RESPUESTA
       const data = await response.json();
-      console.log("✅ Respuesta del servidor:", data);
-
       if (response.ok) {
         setAlertInfo({
           title: "PetCare Manager",
@@ -970,7 +955,7 @@ export default function AgregarVeterinariaUI() {
         });
       } else {
         setAlertInfo({
-          title: "PetCare Manager",
+          title: "Error",
           message: `Error al registrar.\nDetalle: ${
             data.mensaje || "Error desconocido del servidor."
           }`,
@@ -979,7 +964,7 @@ export default function AgregarVeterinariaUI() {
     } catch (error: any) {
       console.error("❌ Error de conexión:", error);
       setAlertInfo({
-        title: "PetCare Manager",
+        title: "Error de conexión",
         message: `No se pudo conectar con el servidor backend.\nError: ${error.message}`,
       });
     }
@@ -1097,21 +1082,20 @@ export default function AgregarVeterinariaUI() {
       )}
 
       {/* Header */}
-      <header className="sticky top-0 z-10 header-base">
-        <div className="mx-auto max-w-7xl px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+      <header className="sticky top-0 z-20 header-base">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
             
-            {/* --- ARREGLO DE FLECHA --- */}
+            {/* --- CORRECCIÓN AQUÍ: Cambiar to="/" por to="/inicio" --- */}
             <Link 
-                to="/" 
-                className="mr-2 p-2 rounded-full text-gray-500 hover:text-blue-700 hover:bg-blue-50 transition-all flex items-center justify-center"
+                to="/inicio"  // <--- ESTO ES LO QUE DEBES CAMBIAR
+                className="mr-2 p-2 rounded-full hover:bg-gray-100 text-gray-600 transition-colors"
                 title="Volver al inicio"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
                     <path d="M19 12H5M12 19l-7-7 7-7"/>
                 </svg>
             </Link>
-            {/* --------------------------------------- */}
 
             <img
               src={PETCARE_LOGO_URL}
@@ -1120,10 +1104,8 @@ export default function AgregarVeterinariaUI() {
             />
             <h1 className="text-xl font-semibold">Agregar veterinaria</h1>
           </div>
-            
-          {/* SE ELIMINÓ EL BOTÓN DE ARRIBA A LA DERECHA */}
+          
           <div className="flex items-center gap-2"></div>
-
         </div>
       </header>
 

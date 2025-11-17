@@ -1,22 +1,25 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import './Inicio.css';
 import PETCARE_ICON_URL from "./assets/PetCare Manager.png";
 import { API_ENDPOINTS } from "./api.config";
 
-// --- ESTADO INICIAL DE ESTADÍSTICAS ---
-const statsCitas = {
-    hoy: 0, week: 0, pending: 0, confirmed: 0, cancelled: 0
-};
-
 const Inicio: React.FC = () => {
-    // Ahora guardamos una LISTA de veterinarias, no solo una
     const [misVeterinarias, setMisVeterinarias] = useState<any[]>([]);
+    const navigate = useNavigate();
+    
+    const usuarioId = localStorage.getItem('idUsuario'); 
+    const usuarioNombre = localStorage.getItem('nombreUsuario') || 'Usuario';
 
     useEffect(() => {
+        if (!usuarioId) {
+            navigate('/'); 
+            return;
+        }
+
         const fetchMisVeterinarias = async () => {
             try {
-                const response = await fetch(API_ENDPOINTS.veterinarias.listarPropias);
+                const response = await fetch(API_ENDPOINTS.veterinarias.listarPropias(usuarioId));
                 if (response.ok) {
                     const data = await response.json();
                     setMisVeterinarias(data);
@@ -26,13 +29,18 @@ const Inicio: React.FC = () => {
             }
         };
         fetchMisVeterinarias();
-    }, []);
+    }, [usuarioId, navigate]);
+
+    const handleLogout = () => {
+        localStorage.clear();
+        navigate('/');
+    };
 
     const getEstadoColor = (estado: string) => {
         switch(estado) {
-            case 'Aprobada': return { bg: '#d4edda', text: '#155724', border: '#c3e6cb' }; // Verde suave
-            case 'Rechazada': return { bg: '#f8d7da', text: '#721c24', border: '#f5c6cb' }; // Rojo suave
-            default: return { bg: '#fff3cd', text: '#856404', border: '#ffeeba' }; // Amarillo suave
+            case 'Aprobada': return { bg: '#d4edda', text: '#155724', border: '#c3e6cb' };
+            case 'Rechazada': return { bg: '#f8d7da', text: '#721c24', border: '#f5c6cb' };
+            default: return { bg: '#fff3cd', text: '#856404', border: '#ffeeba' };
         }
     };
 
@@ -46,16 +54,19 @@ const Inicio: React.FC = () => {
                         <span className="brand-sub">Manager</span>
                     </div>
                 </div>
+
+                {/* --- MENÚ LIMPIO --- */}
                 <nav className="navbar-menu">
-                    <a href="#menu" className="menu-item active">Dashboard</a>
-                    {/* Botón directo para agregar otra sucursal */}
-                    <Link to="/registro-veterinaria" className="menu-item" style={{display:'flex', alignItems:'center', gap:'5px'}}>
-                        <span style={{fontSize:'18px', lineHeight:0}}>+</span> Nueva Sucursal
-                    </Link>
+                    <Link to="/inicio" className="menu-item active">Inicio</Link>
+                    {/* Solo visual */}
+                    <span className="menu-item" style={{cursor: 'pointer'}}>Citas</span>
                 </nav>
-                <div className="navbar-right">
-                    <span className="icon-phone">📞</span>
-                    <span className="phone-number">81236587</span>
+
+                <div className="navbar-right" style={{gap: '15px'}}>
+                    <span style={{fontSize: '14px', color: '#666'}}>Hola, <b>{usuarioNombre}</b></span>
+                    <button onClick={handleLogout} style={{padding: '6px 12px', border: '1px solid #dc3545', color: '#dc3545', background: 'white', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold'}}>
+                        Cerrar Sesión
+                    </button>
                 </div>
             </header>
 
@@ -63,25 +74,17 @@ const Inicio: React.FC = () => {
                 <div className="paw-print left-top"></div>
 
                 <div className="dashboard-row">
-                    {/* TARJETA: RESUMEN GENERAL (Placeholder) */}
                     <div className="card citas-hoy">
                         <h3>Resumen Global</h3>
                         <div className="citas-stats">
-                            <div className="stat-item">
-                                <span className="stat-number primary">0</span>
-                                <span className="stat-label">Citas Hoy</span>
-                            </div>
-                            <div className="stat-item">
-                                <span className="stat-number">0</span>
-                                <span className="stat-label">Ingresos</span>
-                            </div>
+                            <div className="stat-item"><span className="stat-number primary">0</span><span className="stat-label">Citas Hoy</span></div>
+                            <div className="stat-item"><span className="stat-number">0</span><span className="stat-label">Ingresos</span></div>
                         </div>
                         <p style={{textAlign:'center', color:'#999', fontSize:'13px', fontStyle:'italic', marginTop:'20px'}}>
                             Selecciona una sucursal aprobada para ver detalles.
                         </p>
                     </div>
 
-                    {/* --- NUEVA TARJETA: MIS SUCURSALES --- */}
                     <div className="card veterinarios" style={{flex: 1.5}}>
                         <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', borderBottom:'1px solid #eee', paddingBottom:'15px', marginBottom:'15px'}}>
                             <h3 style={{border:'none', padding:0, margin:0}}>Mis Sucursales</h3>
@@ -99,7 +102,6 @@ const Inicio: React.FC = () => {
                                 <div style={{display:'flex', flexDirection:'column', gap:'15px'}}>
                                     {misVeterinarias.map((vet) => {
                                         const colores = getEstadoColor(vet.EstadoVerificacion);
-                                        const esAprobada = vet.EstadoVerificacion === 'Aprobada';
 
                                         return (
                                             <div key={vet.ID} style={{
@@ -107,20 +109,17 @@ const Inicio: React.FC = () => {
                                                 padding:'15px', borderRadius:'10px', border:'1px solid #eee',
                                                 backgroundColor: '#fff', boxShadow:'0 2px 5px rgba(0,0,0,0.02)'
                                             }}>
-                                                {/* Logo */}
                                                 {vet.Logo ? (
-                                                    <img src={vet.Logo} style={{width:'50px', height:'50px', borderRadius:'50%', objectFit:'cover', border:'1px solid #eee'}} />
+                                                    <img src={vet.Logo} style={{width:'50px', height:'50px', borderRadius:'50%', objectFit:'cover', border:'1px solid #eee'}} alt="Logo" />
                                                 ) : (
                                                     <div style={{width:'50px', height:'50px', borderRadius:'50%', background:'#f0f2f5', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'20px'}}>🏥</div>
                                                 )}
 
-                                                {/* Info */}
                                                 <div style={{flex: 1}}>
                                                     <h4 style={{margin:0, color:'#333', fontSize:'15px'}}>{vet.NombreComercial}</h4>
                                                     <p style={{margin:'2px 0 0', fontSize:'12px', color:'#888'}}>{vet.Ciudad} • ID: {vet.ID}</p>
                                                 </div>
 
-                                                {/* Estado y Acción */}
                                                 <div style={{display:'flex', flexDirection:'column', alignItems:'end', gap:'5px'}}>
                                                     <span style={{
                                                         fontSize:'11px', fontWeight:'bold', padding:'4px 10px', borderRadius:'15px',
@@ -129,14 +128,7 @@ const Inicio: React.FC = () => {
                                                         {vet.EstadoVerificacion}
                                                     </span>
                                                     
-                                                    {esAprobada && (
-                                                        <button style={{
-                                                            background:'none', border:'none', color:'#007bff', 
-                                                            fontSize:'12px', cursor:'pointer', fontWeight:'bold', padding:0
-                                                        }}>
-                                                            Gestionar →
-                                                        </button>
-                                                    )}
+                                                    {/* EL BOTÓN "GESTIONAR" YA NO ESTÁ AQUÍ */}
                                                 </div>
                                             </div>
                                         );
@@ -147,7 +139,6 @@ const Inicio: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Sección inferior decorativa o para futuros widgets */}
                 <div className="dashboard-row" style={{marginTop:'20px'}}>
                     <div className="card alertas">
                          <h3 style={{fontSize:'16px'}}>Notificaciones del Sistema</h3>

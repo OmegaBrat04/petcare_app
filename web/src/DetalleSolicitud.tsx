@@ -26,10 +26,30 @@ const DetalleSolicitud: React.FC = () => {
 
     useEffect(() => {
         if (!id) return;
-        fetch(API_ENDPOINTS.veterinarias.obtenerDetalle(Number(id)))
-            .then(res => res.json())
-            .then(setData)
-            .catch(console.error);
+
+        const fetchData = async () => {
+            try {
+                console.log("Iniciando fetch para ID:", id); // LOG 1
+                const url = API_ENDPOINTS.veterinarias.obtenerDetalle(Number(id));
+                console.log("URL:", url); // LOG 2
+
+                const res = await fetch(url);
+                
+                if (!res.ok) {
+                    throw new Error(`Error del servidor: ${res.status} ${res.statusText}`);
+                }
+
+                const jsonData = await res.json();
+                console.log("Datos recibidos:", jsonData); // LOG 3
+                setData(jsonData);
+
+            } catch (error) {
+                console.error("Error cargando detalle:", error);
+                alert("Error al cargar los datos. Revisa la consola.");
+            }
+        };
+
+        fetchData();
     }, [id]);
 
     // FUNCIÓN PARA APROBAR O RECHAZAR

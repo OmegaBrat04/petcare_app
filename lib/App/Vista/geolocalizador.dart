@@ -566,8 +566,9 @@ class _GeolocalizadorPageState extends State<GeolocalizadorPage> {
                               ) {
                                 final input =
                                     textEditingValue.text.toLowerCase();
-                                if (input.isEmpty)
+                                if (input.isEmpty) {
                                   return const Iterable<String>.empty();
+                                }
                                 return _petNames.where(
                                   (p) => p.toLowerCase().contains(input),
                                 );
@@ -828,7 +829,6 @@ class _FullScreenList extends StatelessWidget {
   final void Function(String id) onRoute;
   final void Function(String id) onTapCard;
   const _FullScreenList({
-    super.key,
     required this.clinics,
     required this.onOpen,
     required this.onRoute,
@@ -1110,7 +1110,6 @@ class _ClinicsList extends StatelessWidget {
   final void Function(String id) onTapCard;
   final bool loading;
   const _ClinicsList({
-    super.key,
     required this.clinics,
     required this.onOpen,
     required this.onRoute,
@@ -1261,13 +1260,13 @@ class _SegmentedViewSwitch extends StatelessWidget {
       selected: {index},
       onSelectionChanged: (s) => onChanged(s.first),
       style: ButtonStyle(
-        backgroundColor: MaterialStateProperty.all(
+        backgroundColor: WidgetStateProperty.all(
           Colors.white.withOpacity(.95),
         ),
-        side: MaterialStateProperty.all(
+        side: WidgetStateProperty.all(
           BorderSide(color: Colors.black12.withOpacity(.5)),
         ),
-        padding: MaterialStateProperty.all(
+        padding: WidgetStateProperty.all(
           const EdgeInsets.symmetric(horizontal: 8),
         ),
       ),

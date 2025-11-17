@@ -1,11 +1,9 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:petcare_app/App/Controlador/auth_controller.dart';
 import 'package:petcare_app/App/Vista/citas.dart';
 import 'package:petcare_app/App/Vista/geolocalizador.dart';
 import 'package:petcare_app/App/Vista/InfoMascota.dart';
-import 'package:petcare_app/App/Vista/login.dart';
 import 'package:provider/provider.dart';
 
 /*WidgetsFlutterBinding.ensureInitialized();
@@ -312,8 +310,8 @@ class _HomeShellState extends State<HomeShell> {
                 data: NavigationBarThemeData(
                   height: _kBottomNavHeight,
                   indicatorColor: _kPrimary.withOpacity(.12),
-                  labelTextStyle: MaterialStateProperty.resolveWith((states) {
-                    final selected = states.contains(MaterialState.selected);
+                  labelTextStyle: WidgetStateProperty.resolveWith((states) {
+                    final selected = states.contains(WidgetState.selected);
                     return TextStyle(
                       color: selected ? _kPrimaryDark : Colors.blueGrey,
                       fontWeight: FontWeight.w600,
@@ -517,9 +515,6 @@ class _SearchBarWhite extends StatelessWidget {
   const _SearchBarWhite({
     required this.controller,
     required this.hintText,
-    this.onChanged,
-    this.onSubmitted,
-    this.onClear,
   });
 
   @override

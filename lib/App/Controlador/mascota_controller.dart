@@ -5,7 +5,6 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:petcare_app/App/Modelo/Mascotas.dart';
 import 'package:petcare_app/App/Servicios/api_service.dart';
-import 'package:petcare_app/App/Controlador/auth_controller.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class PetController extends ChangeNotifier {

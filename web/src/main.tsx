@@ -1,21 +1,25 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import { BrowserRouter, Routes, Route } from 'react-router-dom' // Importamos el enrutador
-import './index.css' // Tus estilos globales (si los tienes)
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
 
-// Importamos tus componentes
+// 👇👇 ¡ESTA ES LA LÍNEA QUE FALTA! AGREGALA AQUÍ 👇👇
+import './index.css' 
+// 👆👆 Sin esto, Tailwind no carga 👆👆
+
 import Inicio from './Inicio'
 import RegistroVeterinariaConexion from './RegistroVeterinariaConexion'
+import InicioAdmin from './InicioAdmin' 
+import DetalleSolicitud from './DetalleSolicitud'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <BrowserRouter>
       <Routes>
-        {/* Cuando la ruta es "/" (la principal), mostramos Inicio */}
-        <Route path="/" element={<Inicio />} />
-        
-        {/* Cuando la ruta es "/registro-veterinaria", mostramos tu otro archivo */}
+        <Route path="/" element={<Inicio/>} />
+        <Route path="/inicio" element={<Inicio />} />
         <Route path="/registro-veterinaria" element={<RegistroVeterinariaConexion />} />
+        <Route path="/admin" element={<InicioAdmin />} />
+        <Route path="/admin/solicitud/:id" element={<DetalleSolicitud />} />
       </Routes>
     </BrowserRouter>
   </React.StrictMode>,

@@ -1,14 +1,10 @@
 import React, { useState, useRef, useEffect } from "react";
+import { Link, useNavigate } from 'react-router-dom';
 import "./RegistroVeterinariaUI.css";
 import { API_ENDPOINTS } from "./api.config";
 
 // --- MODIFICACIÓN: Importar el logo localmente ---
-// (Esto asume que has movido tu imagen a 'src/assets/PetCare Manager.png')
 import PETCARE_LOGO_URL from "./assets/PetCare Manager.png";
-
-const mapSrc = "/mnt/data/4b0234d6-b38b-4b8c-aecc-e8fc007ee5a.jpg";
-const fallbackSrc =
-  "https://images.unsplash.com/photo-1502920917128-1aa500764b8a?q=80&w=1200&auto=format&fit=crop";
 
 // --- INTERFACES DE DATOS Y ESTADO ---
 
@@ -28,22 +24,17 @@ interface Horario {
 
 // Interfaz para el estado unificado del formulario
 interface FormData {
-  // Responsable
   nombreResponsable: string;
   apellidosResponsable: string;
   emailResponsable: string;
   telefonoResponsable: string;
   documentoIdentidad: string;
   puesto: string;
-
-  // Veterinaria
   nombreComercial: string;
   descripcionVeterinaria: string;
   categorias: string;
   razonSocial: string;
   rfc: string;
-
-  // Ubicación
   calle: string;
   numeroExterior: string;
   colonia: string;
@@ -51,8 +42,6 @@ interface FormData {
   estado: string;
   codigoPostal: string;
   referencias: string;
-
-  // Contacto
   telefonoClinica: string;
   whatsapp: string;
   emailClinica: string;
@@ -122,7 +111,6 @@ const CustomAlert: React.FC<{
   message: string;
   onClose: () => void;
 }> = ({ title, message, onClose }) => {
-  // Procesar el mensaje para respetar los saltos de línea
   const messageLines = message.split("\n");
 
   return (
@@ -133,7 +121,6 @@ const CustomAlert: React.FC<{
       aria-modal="true"
     >
       <div className="bg-white rounded-lg shadow-xl w-full max-w-md m-4 transform transition-all ease-out duration-300">
-        {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <div className="flex items-center">
             <img
@@ -146,7 +133,6 @@ const CustomAlert: React.FC<{
             </h3>
           </div>
         </div>
-        {/* Body */}
         <div className="p-6">
           {messageLines.map((line, index) => (
             <p
@@ -157,7 +143,6 @@ const CustomAlert: React.FC<{
             </p>
           ))}
         </div>
-        {/* Footer */}
         <div className="flex justify-end p-4 bg-gray-50 rounded-b-lg">
           <button onClick={onClose} className="btn-primary">
             Aceptar
@@ -167,7 +152,6 @@ const CustomAlert: React.FC<{
     </div>
   );
 };
-// --- FIN DE LA MODIFICACIÓN ---
 
 // --- COMPONENTES UI REUTILIZABLES ---
 
@@ -299,16 +283,18 @@ const StepNavigation: React.FC<{
     ) : (
       <div />
     )}
-    {current < total ? (
-      <button className="btn-primary ml-auto" onClick={onNext}>
-        Siguiente {">"}
-      </button>
-    ) : (
+    
+    {/* CAMBIO IMPORTANTE: Si es el último paso, mostramos botón de enviar */}
+    {current === total ? (
       <button
         className="btn-primary ml-auto bg-green-600 hover:bg-green-700"
         onClick={onFinalSubmit}
       >
-        Verificar
+        Enviar a verificación
+      </button>
+    ) : (
+      <button className="btn-primary ml-auto" onClick={onNext}>
+        Siguiente {">"}
       </button>
     )}
   </div>
@@ -316,13 +302,13 @@ const StepNavigation: React.FC<{
 
 // --- Lógica del formulario guiado por pasos (Wizard) ---
 
+// SE ELIMINÓ "Publicación" de la lista de pasos
 const STEP_LABELS = [
   "Responsable",
   "Veterinaria",
   "Ubicación",
   "Contacto",
   "Servicios",
-  "Publicación",
 ];
 
 interface FormStepProps {
@@ -354,17 +340,14 @@ const FormStep: React.FC<FormStepProps> = ({
   logoUrl,
   handleLogoChange,
 }) => {
-  // Estado local para el nuevo servicio
   const [newServiceName, setNewServiceName] = useState("");
   const [newServiceDesc, setNewServiceDesc] = useState("");
   const [newServicePrice, setNewServicePrice] = useState("");
 
-  // Estado local para el nuevo horario
   const [newScheduleDay, setNewScheduleDay] = useState("");
   const [newScheduleOpen, setNewScheduleOpen] = useState("");
   const [newScheduleClose, setNewScheduleClose] = useState("");
 
-  // Limpiar sub-formularios al cambiar de paso
   useEffect(() => {
     setNewScheduleDay("");
     setNewScheduleOpen("");
@@ -374,14 +357,13 @@ const FormStep: React.FC<FormStepProps> = ({
     setNewServicePrice("");
   }, [step]);
 
-  // Handler para agregar horario
   const handleAddSchedule = () => {
     if (
       !newScheduleDay.trim() ||
       !newScheduleOpen.trim() ||
       !newScheduleClose.trim()
     ) {
-      onNext(); // Llama a onNext para que la validación del padre se active
+      onNext(); 
       return;
     }
 
@@ -394,26 +376,23 @@ const FormStep: React.FC<FormStepProps> = ({
     };
 
     setScheduleList((prev) => [...prev, nuevoHorario]);
-    // Limpiar campos
     setNewScheduleDay("");
     setNewScheduleOpen("");
     setNewScheduleClose("");
   };
 
-  // Handler para eliminar horario
   const handleRemoveSchedule = (id: number) => {
     setScheduleList((prev) => prev.filter((item) => item.id !== id));
   };
 
-  // Handler para agregar servicio
   const handleAddService = () => {
     if (!newServiceName.trim() || !newServicePrice.trim()) {
-      onNext(); // Llama a onNext para que la validación del padre se active
+      onNext();
       return;
     }
     const price = parseFloat(newServicePrice);
     if (isNaN(price) || price < 0) {
-      onNext(); // Llama a onNext para que la validación del padre se active
+      onNext();
       return;
     }
 
@@ -425,7 +404,7 @@ const FormStep: React.FC<FormStepProps> = ({
       activo: true,
     };
 
-    setServicesList((prev) => [...prev, nuevoServicio]); // Limpiar campos
+    setServicesList((prev) => [...prev, nuevoServicio]);
     setNewServiceName("");
     setNewServiceDesc("");
     setNewServicePrice("");
@@ -439,7 +418,6 @@ const FormStep: React.FC<FormStepProps> = ({
     );
   };
 
-  // Referencia para el input de archivo oculto
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -473,7 +451,6 @@ const FormStep: React.FC<FormStepProps> = ({
     fileInputRef.current?.click();
   };
 
-  // Handler para eliminar el logo
   const handleRemoveLogo = () => {
     handleLogoChange(null);
     if (fileInputRef.current) {
@@ -481,7 +458,7 @@ const FormStep: React.FC<FormStepProps> = ({
     }
   };
 
-  // Contenido de cada paso
+  // Contenido de cada paso (SE ELIMINÓ CASE 6)
   const stepsContent: Record<number, React.ReactNode> = {
     // Responsable
     1: (
@@ -884,32 +861,6 @@ const FormStep: React.FC<FormStepProps> = ({
         </div>
       </Section>
     ),
-    // Publicación
-    6: (
-      <Section
-        title="Publicación y verificación"
-        subtitle="Estos datos afectan la visibilidad en el mapa"
-      >
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field
-            label="Estado de publicación"
-            placeholder="Borrador / Publicada / No publicada"
-          />
-          <Field
-            label="Estatus de verificación"
-            placeholder="Pendiente / Aprobada"
-          />
-          <div className="sm:col-span-2">
-            <div className="text-sm text-gray-600 mb-1">
-              Documentos de verificación
-            </div>
-            <div className="h-28 rounded-xl border border-blue-100 bg-blue-50 flex items-center justify-center text-sm text-blue-700">
-              Soltar archivos aquí (mock)
-            </div>
-          </div>
-        </div>
-      </Section>
-    ),
   };
 
   return (
@@ -939,6 +890,8 @@ export default function AgregarVeterinariaUI() {
     title: string;
     message: string;
   } | null>(null);
+
+  const navigate = useNavigate();
 
   const handleChange = (name: keyof FormData, value: string) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -1094,16 +1047,10 @@ export default function AgregarVeterinariaUI() {
         missingFields.push("• Instagram (URL inválida)");
       }
     }
-    // Validar Paso 5: Servicios
+    
+    // PASO 5 (Ahora es el último): Solo validar si hay al menos un servicio
     else if (currentStep === 5) {
-      if (servicesList.length === 0) {
-        setAlertInfo({
-          title: "PetCare Manager",
-          message:
-            "Debes agregar al menos un servicio para continuar.\n\nPuedes desactivarlo si no quieres que sea público, pero debe estar en la lista.",
-        });
-        return; // No avanzar
-      }
+       // La validación final se hace en handleEnviarVerificacion
     }
 
     // Mostrar modal si faltan campos
@@ -1117,8 +1064,13 @@ export default function AgregarVeterinariaUI() {
       return; // No avanzar
     }
 
-    // Si todo está bien, avanzar
-    setCurrentStep((prev) => Math.min(prev + 1, totalSteps));
+    // Si estamos en el último paso (5), enviamos
+    if (currentStep === totalSteps) {
+        handleEnviarVerificacion();
+    } else {
+        // Si no, avanzamos
+        setCurrentStep((prev) => Math.min(prev + 1, totalSteps));
+    }
   };
 
   const prevStep = () => setCurrentStep((prev) => Math.max(prev - 1, 1));
@@ -1147,22 +1099,31 @@ export default function AgregarVeterinariaUI() {
       {/* Header */}
       <header className="sticky top-0 z-10 header-base">
         <div className="mx-auto max-w-7xl px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {/* --- MODIFICACIÓN: Añadir el logo aquí --- */}
+          <div className="flex items-center gap-2">
+            
+            {/* --- ARREGLO DE FLECHA --- */}
+            <Link 
+                to="/" 
+                className="mr-2 p-2 rounded-full text-gray-500 hover:text-blue-700 hover:bg-blue-50 transition-all flex items-center justify-center"
+                title="Volver al inicio"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+            </Link>
+            {/* --------------------------------------- */}
+
             <img
               src={PETCARE_LOGO_URL}
               alt="PetCare Manager Logo"
-              className="h-8 w-8 object-contain" // Ajusta h-8 y w-8 para el tamaño deseado
+              className="h-8 w-8 object-contain"
             />
-            {/* ------------------------------------------- */}
             <h1 className="text-xl font-semibold">Agregar veterinaria</h1>
-            <span className="text-sm text-gray-500">Prototipo visual</span>
           </div>
-          <div className="flex items-center gap-2">
-            <button className="btn-primary" onClick={handleEnviarVerificacion}>
-              Enviar a verificación
-            </button>
-          </div>
+            
+          {/* SE ELIMINÓ EL BOTÓN DE ARRIBA A LA DERECHA */}
+          <div className="flex items-center gap-2"></div>
+
         </div>
       </header>
 

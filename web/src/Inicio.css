@@ -25,7 +25,7 @@ body {
     border-bottom: 1px solid #e0e0e0;
 }
 
-/* Navbar Izquierda (Icono + Texto) */
+/* Navbar Izquierda */
 .navbar-left {
     display: flex;
     align-items: center;
@@ -33,11 +33,10 @@ body {
 }
 
 .navbar-logo-icon {
-    height: 45px; /* Tamaño del perro */
+    height: 45px;
     width: auto;
 }
 
-/* Estilos para el texto "PetCare Manager" */
 .brand-text {
     display: flex;
     flex-direction: column;
@@ -47,15 +46,15 @@ body {
 
 .brand-main {
     font-size: 22px;
-    font-weight: 900; /* Muy negrita */
-    color: #002D62; /* Azul Oscuro */
+    font-weight: 900;
+    color: #002D62;
     font-family: 'Arial Black', Arial, sans-serif;
 }
 
 .brand-sub {
     font-size: 19px;
     font-weight: bold;
-    color: #33CCFF; /* Azul Celeste */
+    color: #33CCFF;
     font-family: Arial, sans-serif;
 }
 
@@ -75,12 +74,13 @@ body {
     transition: color 0.2s ease;
 }
 
+/* --- CAMBIO DE COLOR A AZUL --- */
 .menu-item.active {
-    color: #4CAF50; /* Verde */
+    color: #007bff; /* Azul en lugar de verde */
 }
 
 .menu-item:not(.active):hover {
-    color: #007bff; /* Azul al pasar el mouse */
+    color: #0056b3;
 }
 
 .menu-item.active::after {
@@ -89,11 +89,11 @@ body {
     left: 0;
     bottom: -5px;
     width: 100%;
-    height: 2px;
-    background-color: #4CAF50;
+    height: 3px; /* Ligeramente más grueso para que se note más */
+    background-color: #007bff; /* Línea Azul */
 }
 
-/* Navbar Derecha (Teléfono y Horario) */
+/* Navbar Derecha */
 .navbar-right {
     display: flex;
     align-items: center;
@@ -112,14 +112,6 @@ body {
     color: #333; 
     font-weight: bold;
     margin-right: 5px;
-}
-
-.schedule {
-    font-size: 12px;
-    color: #999;
-    margin-left: 5px;
-    border-left: 1px solid #ccc;
-    padding-left: 10px;
 }
 
 /* --- DASHBOARD CONTENT --- */
@@ -146,7 +138,7 @@ body {
 .card {
     background-color: #fff;
     border-radius: 6px;
-    border: 1px solid #e0e0e0; /* Borde definido */
+    border: 1px solid #e0e0e0;
     box-shadow: none;
     padding: 20px;
     flex: 1;
@@ -357,7 +349,6 @@ body {
     position: absolute;
     width: 100px; 
     height: 100px;
-    /* Asegúrate de que esta ruta sea correcta */
     background-image: url('./assets/paw-print.svg'); 
     background-repeat: no-repeat;
     background-size: contain;
@@ -381,7 +372,6 @@ body {
     transform: rotate(20deg);
 }
 
-/* Responsive (Móvil) */
 @media (max-width: 1200px) {
     .dashboard-row {
         flex-wrap: wrap;

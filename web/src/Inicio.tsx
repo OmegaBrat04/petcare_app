@@ -1,7 +1,7 @@
 import React from 'react';
-import { Link } from 'react-router-dom'; 
+import { Link } from 'react-router-dom';
 import './Inicio.css';  /* <--- ¡ESTA LÍNEA ES LA CLAVE! TIENE QUE ESTAR AQUÍ */
-import PETCARE_ICON_URL from "./assets/PetCare Manager.png"; 
+import PETCARE_ICON_URL from "./assets/PetCare Manager.png";
 
 // ... el resto del código ...
 
@@ -12,17 +12,17 @@ const Inicio: React.FC = () => {
                 <div className="navbar-left">
                     {/* Logo Icono */}
                     <img src={PETCARE_ICON_URL} alt="Logo Icono" className="navbar-logo-icon" />
-                    
+
                     {/* CAMBIO 1: Logo en Texto CSS en lugar de imagen */}
                     <div className="brand-text">
                         <span className="brand-main">PetCare</span>
                         <span className="brand-sub">Manager</span>
                     </div>
                 </div>
-                
+
                 <nav className="navbar-menu">
                     <a href="#menu" className="menu-item active">Menu</a>
-                    
+
                     {/* CAMBIO 3: Enlace a la ruta de Registro */}
                     {/* Esto buscará la ruta definida en tu App.tsx */}
                     <Link to="/registro-veterinaria" className="menu-item">
@@ -34,7 +34,7 @@ const Inicio: React.FC = () => {
                     {/* CAMBIO 2: Icono a la izquierda, Número a la derecha */}
                     <span className="icon-phone">📞</span>
                     <span className="phone-number">81236587</span>
-                    
+
                     <span className="schedule"> | Lunes - Sabado 8:00 AM - 8:00 PM</span>
                 </div>
             </header>
@@ -128,7 +128,7 @@ const Inicio: React.FC = () => {
                 <div className="dashboard-row">
                     <div className="card proximos-recordatorios">
                         <h3>Próximos recordatorios</h3>
-                        
+
                         <div className="recordatorios-header">
                             <span className="recordatorio-fecha-header">Fecha</span>
                             <span className="recordatorio-desc-header">Descripción</span>

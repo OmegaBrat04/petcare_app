@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom'; // Importar useNavigate
 import './InicioAdmin.css';
-import PETCARE_ICON_URL from "./assets/PetCare Manager.png"; 
-import { API_ENDPOINTS } from "./api.config"; 
+import PETCARE_ICON_URL from "./assets/PetCare Manager.png";
+import { API_ENDPOINTS } from "./api.config";
 
+// 🚨 INTERFAZ CORREGIDA: Usamos minúsculas para que coincida con el JSON del backend
 interface Solicitud {
-    ID: number;
-    NombreComercial: string;
-    Responsable: string;
-    Ciudad: string;
-    FechaSolicitud: string;
+    id: number;                 // Antes: ID
+    nombre_comercial: string;   // Antes: NombreComercial
+    Responsable: string;        // Este SÍ es mayúscula porque lo creamos con 'AS' en el SQL
+    ciudad: string;             // Antes: Ciudad
+    FechaSolicitud: string;     // Este SÍ es mayúscula (del 'AS')
 }
 
 const InicioAdmin: React.FC = () => {
@@ -19,8 +20,8 @@ const InicioAdmin: React.FC = () => {
     useEffect(() => {
         fetch(API_ENDPOINTS.veterinarias.listarPendientes)
             .then(res => res.json())
-            .then(data => setSolicitudes(data))
-            .catch(err => console.error("Error:", err));
+            .then((data: Solicitud[]) => setSolicitudes(data)) // Tipamos la data
+            .catch(err => console.error("Error cargando pendientes:", err));
     }, []);
 
     return (
@@ -48,7 +49,7 @@ const InicioAdmin: React.FC = () => {
 
                 <div className="card admin-card">
                     <h3>Solicitudes Pendientes ({solicitudes.length})</h3>
-                    
+
                     {solicitudes.length === 0 ? (
                         <div className="empty-state"><p>🎉 No hay solicitudes pendientes.</p></div>
                     ) : (
@@ -58,19 +59,20 @@ const InicioAdmin: React.FC = () => {
                                     <tr><th>ID</th><th>Veterinaria</th><th>Responsable</th><th>Ciudad</th><th>Fecha</th><th>Estado</th><th>Acciones</th></tr>
                                 </thead>
                                 <tbody>
+                                    {/* 🚨 CORRECCIÓN: Usamos .id y .nombre_comercial */}
                                     {solicitudes.map((sol) => (
-                                        <tr key={sol.ID}>
-                                            <td>#{sol.ID}</td>
-                                            <td className="font-bold">{sol.NombreComercial}</td>
+                                        <tr key={sol.id}>
+                                            <td>#{sol.id}</td>
+                                            <td className="font-bold">{sol.nombre_comercial}</td>
                                             <td>{sol.Responsable}</td>
-                                            <td>{sol.Ciudad}</td>
+                                            <td>{sol.ciudad}</td>
                                             <td>{sol.FechaSolicitud}</td>
                                             <td><span className="status-badge pending">Pendiente</span></td>
                                             <td>
-                                                {/* BOTÓN QUE LLEVA AL DETALLE */}
-                                                <button 
+                                                <button
                                                     className="btn-revisar"
-                                                    onClick={() => navigate(`/admin/solicitud/${sol.ID}`)}
+                                                    // 🚨 CORRECCIÓN: Usamos .id
+                                                    onClick={() => navigate(`/admin/solicitud/${sol.id}`)}
                                                 >
                                                     Revisar Datos
                                                 </button>

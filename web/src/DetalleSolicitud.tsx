@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { API_ENDPOINTS } from './api.config';
-import PETCARE_LOGO_URL from "./assets/PetCare Manager.png"; 
+import PETCARE_LOGO_URL from "./assets/PetCare Manager.png";
 
+// Estilos (sin cambios)
 const styles = {
     container: { padding: '40px', maxWidth: '1000px', margin: '0 auto', fontFamily: 'Arial, sans-serif' },
     header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' },
@@ -22,25 +23,25 @@ const styles = {
 const DetalleSolicitud: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const [data, setData] = useState<any>(null);
+    const [data, setData] = useState<any>(null); // Lo dejamos como 'any' para facilidad
 
     useEffect(() => {
-        if (!id) return;
+        // 🚨 CORRECCIÓN: Validar que 'id' no sea "undefined" ni NaN
+        if (!id || isNaN(Number(id))) {
+            console.error("ID inválido:", id);
+            return; // No hacer fetch si el ID no es un número válido
+        }
 
         const fetchData = async () => {
             try {
-                console.log("Iniciando fetch para ID:", id); // LOG 1
                 const url = API_ENDPOINTS.veterinarias.obtenerDetalle(Number(id));
-                console.log("URL:", url); // LOG 2
-
                 const res = await fetch(url);
-                
+
                 if (!res.ok) {
                     throw new Error(`Error del servidor: ${res.status} ${res.statusText}`);
                 }
 
                 const jsonData = await res.json();
-                console.log("Datos recibidos:", jsonData); // LOG 3
                 setData(jsonData);
 
             } catch (error) {
@@ -52,9 +53,9 @@ const DetalleSolicitud: React.FC = () => {
         fetchData();
     }, [id]);
 
-    // FUNCIÓN PARA APROBAR O RECHAZAR
+    // FUNCIÓN PARA APROBAR O RECHAZAR (Sin cambios, ya usa Number(id))
     const handleEstado = async (nuevoEstado: 'Aprobada' | 'Rechazada') => {
-        if(!confirm(`¿Estás seguro de marcar esta solicitud como ${nuevoEstado}?`)) return;
+        if (!confirm(`¿Estás seguro de marcar esta solicitud como ${nuevoEstado}?`)) return;
 
         try {
             const response = await fetch(API_ENDPOINTS.veterinarias.actualizarEstado(Number(id)), {
@@ -65,7 +66,7 @@ const DetalleSolicitud: React.FC = () => {
 
             if (response.ok) {
                 alert(`Veterinaria ${nuevoEstado} con éxito.`);
-                navigate('/admin'); 
+                navigate('/admin');
             } else {
                 alert('Error al actualizar el estado.');
             }
@@ -75,17 +76,20 @@ const DetalleSolicitud: React.FC = () => {
         }
     };
 
-    if (!data) return <div style={{padding: '50px', textAlign: 'center'}}>Cargando...</div>;
+    if (!data) return <div style={{ padding: '50px', textAlign: 'center' }}>Cargando...</div>;
 
+    // --- RENDERIZADO (TRADUCIDO A MINÚSCULAS) ---
+    // 🚨 CORRECCIÓN: Cambiamos todas las 'Mayusculas' por 'minusculas_con_guion_bajo'
     return (
-        <div style={{backgroundColor: '#f0f2f5', minHeight: '100vh'}}>
-            <div style={{background: 'white', padding: '12px 30px', borderBottom: '1px solid #ddd', display: 'flex', alignItems: 'center', gap: '10px'}}>
-                <img src={PETCARE_LOGO_URL} alt="Logo" style={{height: '32px'}} />
-                <div style={{display:'flex', flexDirection:'column', lineHeight:'1.1'}}>
-                     <span style={{fontWeight: '900', color: '#002D62', fontSize:'18px'}}>PetCare</span>
-                     <span style={{fontWeight: 'bold', color: '#33CCFF', fontSize:'15px'}}>Manager</span>
+        <div style={{ backgroundColor: '#f0f2f5', minHeight: '100vh' }}>
+            {/* Header (sin cambios) */}
+            <div style={{ background: 'white', padding: '12px 30px', borderBottom: '1px solid #ddd', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <img src={PETCARE_LOGO_URL} alt="Logo" style={{ height: '32px' }} />
+                <div style={{ display: 'flex', flexDirection: 'column', lineHeight: '1.1' }}>
+                    <span style={{ fontWeight: '900', color: '#002D62', fontSize: '18px' }}>PetCare</span>
+                    <span style={{ fontWeight: 'bold', color: '#33CCFF', fontSize: '15px' }}>Manager</span>
                 </div>
-                <span style={{background: '#e3f2fd', color: '#007bff', padding: '4px 8px', borderRadius: '12px', fontSize: '11px', marginLeft: '10px', border:'1px solid #bbdefb', fontWeight:'bold'}}>ADMIN</span>
+                <span style={{ background: '#e3f2fd', color: '#007bff', padding: '4px 8px', borderRadius: '12px', fontSize: '11px', marginLeft: '10px', border: '1px solid #bbdefb', fontWeight: 'bold' }}>ADMIN</span>
             </div>
 
             <div style={styles.container}>
@@ -93,35 +97,33 @@ const DetalleSolicitud: React.FC = () => {
 
                 <div style={styles.header}>
                     <div style={styles.headerLeft}>
-                        {data.Logo ? (
-                            <img src={data.Logo} alt="Logo Vet" style={styles.logoImage} />
+                        {data.logo ? (
+                            <img src={data.logo} alt="Logo Vet" style={styles.logoImage} />
                         ) : (
                             <div style={styles.logoPlaceholder}>🏥</div>
                         )}
                         <div>
-                            <h1 style={{margin: 0, color: '#333'}}>{data.NombreComercial}</h1>
-                            <p style={{margin: '5px 0 0', color: '#666'}}>
-                                Solicitud #{data.ID} • {data.Ciudad} • 
-                                {/* CORRECCIÓN AQUÍ: Usar EstadoVerificacion */}
-                                <strong style={{color: '#f0ad4e', marginLeft: '5px'}}>
-                                    {data.EstadoVerificacion}
+                            <h1 style={{ margin: 0, color: '#333' }}>{data.nombre_comercial}</h1>
+                            <p style={{ margin: '5px 0 0', color: '#666' }}>
+                                Solicitud #{data.id} • {data.ciudad} •
+                                <strong style={{ color: '#f0ad4e', marginLeft: '5px' }}>
+                                    {data.estado_verificacion}
                                 </strong>
                             </p>
                         </div>
                     </div>
-                    
-                    {/* CORRECCIÓN AQUÍ: Validar contra EstadoVerificacion */}
-                    {data.EstadoVerificacion === 'Pendiente' && (
-                        <div style={{display: 'flex', gap: '10px'}}>
-                            <button 
+
+                    {data.estado_verificacion === 'Pendiente' && (
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                            <button
                                 onClick={() => handleEstado('Rechazada')}
-                                style={{padding: '10px 20px', borderRadius: '6px', border: '1px solid #dc3545', background: 'white', color: '#dc3545', cursor: 'pointer', fontWeight:'bold'}}
+                                style={{ padding: '10px 20px', borderRadius: '6px', border: '1px solid #dc3545', background: 'white', color: '#dc3545', cursor: 'pointer', fontWeight: 'bold' }}
                             >
                                 Rechazar
                             </button>
-                            <button 
+                            <button
                                 onClick={() => handleEstado('Aprobada')}
-                                style={{padding: '10px 20px', borderRadius: '6px', border: 'none', background: '#28a745', color: 'white', cursor: 'pointer', fontWeight:'bold'}}
+                                style={{ padding: '10px 20px', borderRadius: '6px', border: 'none', background: '#28a745', color: 'white', cursor: 'pointer', fontWeight: 'bold' }}
                             >
                                 Aprobar Registro
                             </button>
@@ -132,50 +134,50 @@ const DetalleSolicitud: React.FC = () => {
                 <div style={styles.card}>
                     <h3 style={styles.sectionTitle}>👤 Responsable</h3>
                     <div style={styles.grid}>
-                        <div style={styles.field}><span style={styles.label}>Nombre Completo</span><div style={styles.value}>{data.NombreResponsable} {data.ApellidosResponsable}</div></div>
-                        <div style={styles.field}><span style={styles.label}>Puesto</span><div style={styles.value}>{data.Puesto}</div></div>
-                        <div style={styles.field}><span style={styles.label}>Email</span><div style={styles.value}>{data.EmailResponsable}</div></div>
-                        <div style={styles.field}><span style={styles.label}>Teléfono</span><div style={styles.value}>{data.TelefonoResponsable}</div></div>
+                        <div style={styles.field}><span style={styles.label}>Nombre Completo</span><div style={styles.value}>{data.nombre_responsable} {data.apellidos_responsable}</div></div>
+                        <div style={styles.field}><span style={styles.label}>Puesto</span><div style={styles.value}>{data.puesto}</div></div>
+                        <div style={styles.field}><span style={styles.label}>Email</span><div style={styles.value}>{data.email_responsable}</div></div>
+                        <div style={styles.field}><span style={styles.label}>Teléfono</span><div style={styles.value}>{data.telefono_responsable}</div></div>
                     </div>
                 </div>
 
                 <div style={styles.card}>
                     <h3 style={styles.sectionTitle}>🏥 Datos de la Veterinaria</h3>
                     <div style={styles.grid}>
-                        <div style={styles.field}><span style={styles.label}>Razón Social</span><div style={styles.value}>{data.RazonSocial || 'N/A'}</div></div>
-                        <div style={styles.field}><span style={styles.label}>RFC</span><div style={styles.value}>{data.RFC || 'N/A'}</div></div>
-                        <div style={styles.field}><span style={styles.label}>Categorías</span><div style={styles.value}>{data.Categorias}</div></div>
-                        <div style={styles.field}><span style={styles.label}>Descripción</span><div style={styles.value}>{data.Descripcion}</div></div>
+                        <div style={styles.field}><span style={styles.label}>Razón Social</span><div style={styles.value}>{data.razon_social || 'N/A'}</div></div>
+                        <div style={styles.field}><span style={styles.label}>RFC</span><div style={styles.value}>{data.rfc || 'N/A'}</div></div>
+                        <div style={styles.field}><span style={styles.label}>Categorías</span><div style={styles.value}>{data.categorias}</div></div>
+                        <div style={styles.field}><span style={styles.label}>Descripción</span><div style={styles.value}>{data.descripcion}</div></div>
                     </div>
                 </div>
 
                 <div style={styles.card}>
                     <h3 style={styles.sectionTitle}>📍 Ubicación y Contacto</h3>
                     <div style={styles.grid}>
-                        <div style={styles.field}><span style={styles.label}>Dirección</span><div style={styles.value}>{data.Calle} #{data.NumeroExterior}, {data.Colonia}</div></div>
-                        <div style={styles.field}><span style={styles.label}>Ubicación</span><div style={styles.value}>{data.Ciudad}, {data.Estado} (CP: {data.CodigoPostal})</div></div>
-                        <div style={styles.field}><span style={styles.label}>Teléfono Clínica</span><div style={styles.value}>{data.TelefonoClinica}</div></div>
-                        <div style={styles.field}><span style={styles.label}>Email Clínica</span><div style={styles.value}>{data.EmailClinica}</div></div>
+                        <div style={styles.field}><span style={styles.label}>Dirección</span><div style={styles.value}>{data.calle} #{data.numero_exterior}, {data.colonia}</div></div>
+                        <div style={styles.field}><span style={styles.label}>Ubicación</span><div style={styles.value}>{data.ciudad}, {data.estado} (CP: {data.codigo_postal})</div></div>
+                        <div style={styles.field}><span style={styles.label}>Teléfono Clínica</span><div style={styles.value}>{data.telefono_clinica}</div></div>
+                        <div style={styles.field}><span style={styles.label}>Email Clínica</span><div style={styles.value}>{data.email_clinica}</div></div>
                     </div>
                 </div>
 
-                <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px'}}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                     <div style={styles.card}>
                         <h3 style={styles.sectionTitle}>🛠️ Servicios</h3>
                         <div>
                             {data.servicios?.length > 0 ? data.servicios.map((s: any) => (
-                                <span key={s.ID} style={styles.tag}>{s.Nombre} (${s.Precio})</span>
-                            )) : <span style={{color:'#999', fontStyle:'italic'}}>Sin servicios</span>}
+                                <span key={s.id} style={styles.tag}>{s.nombre} (${s.precio})</span>
+                            )) : <span style={{ color: '#999', fontStyle: 'italic' }}>Sin servicios</span>}
                         </div>
                     </div>
                     <div style={styles.card}>
                         <h3 style={styles.sectionTitle}>🕒 Horarios</h3>
-                        <ul style={{paddingLeft: '20px', margin: 0}}>
+                        <ul style={{ paddingLeft: '20px', margin: 0 }}>
                             {data.horarios?.length > 0 ? data.horarios.map((h: any) => (
-                                <li key={h.ID} style={{fontSize: '14px', marginBottom: '5px', color:'#555'}}>
-                                    <strong>{h.Dia}:</strong> {h.Apertura} - {h.Cierre}
+                                <li key={h.id} style={{ fontSize: '14px', marginBottom: '5px', color: '#555' }}>
+                                    <strong>{h.dia}:</strong> {h.apertura} - {h.cierre}
                                 </li>
-                            )) : <span style={{color:'#999', fontStyle:'italic'}}>Sin horarios</span>}
+                            )) : <span style={{ color: '#999', fontStyle: 'italic' }}>Sin horarios</span>}
                         </ul>
                     </div>
                 </div>

@@ -1,7 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const sql = require('mssql'); 
+const sql = require('mssql');
 const dotenv = require('dotenv');
 
 // Cargar variables de entorno (.env)
@@ -12,15 +12,15 @@ const port = 3001;
 
 // --- Configuración de Base de Datos SQL Server ---
 const dbConfig = {
-    server: process.env.DB_SERVER, 
-    user: process.env.DB_USER, 
-    password: process.env.DB_PASSWORD, 
+    server: process.env.DB_SERVER,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
     database: process.env.DB_DATABASE,
     options: {
-        trustServerCertificate: true, 
+        trustServerCertificate: true,
         enableArithAbort: true,
-        encrypt: false, 
-        port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 1433, 
+        encrypt: false,
+        port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 1433,
     }
 };
 
@@ -43,7 +43,7 @@ async function testDbConnection() {
 
 // --- Middleware ---
 app.use(cors({
-    origin: '*', 
+    origin: '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
@@ -51,7 +51,7 @@ app.use(bodyParser.json({ limit: '50mb' }));
 
 
 // =================================================================
-// SECCIÓN 1: AUTENTICACIÓN (Login/Registro)
+// SECCIÓN 1: AUTENTICACIÓN (Login/Registro) - (¡Esta ya funcionaba!)
 // =================================================================
 
 // --- ENDPOINT: LOGIN DE USUARIO ---
@@ -75,6 +75,7 @@ app.post('/api/web/auth/login', async (req, res) => {
             return res.status(401).json({ success: false, message: 'Contraseña incorrecta' });
         }
         await pool.close();
+        // Devolvemos el ID del usuario para usarlo en el frontend
         res.status(200).json({ success: true, message: 'Login OK', idUsuario: usuario.IdUsuarioWeb, rol: usuario.Rol, nombre: usuario.NombreCompleto });
     } catch (err) {
         res.status(500).json({ success: false, message: 'Error de servidor' });
@@ -89,7 +90,7 @@ app.post('/api/web/auth/register', async (req, res) => {
         const request = new sql.Request(pool);
         request.input('Email', sql.NVarChar, Email);
         const checkEmail = await request.query('SELECT IdUsuarioWeb FROM dbo.UsuariosWeb WHERE Email = @Email');
-        
+
         if (checkEmail.recordset.length > 0) {
             await pool.close();
             return res.status(409).json({ success: false, message: 'El email ya está registrado.' });
@@ -109,45 +110,69 @@ app.post('/api/web/auth/register', async (req, res) => {
 
 
 // =================================================================
-// SECCIÓN 2: GESTIÓN DE VETERINARIAS
+// SECCIÓN 2: GESTIÓN DE VETERINARIAS (AQUÍ ESTABAN LOS ERRORES)
 // =================================================================
 
 // --- 1. LISTA PENDIENTES (ADMIN) ---
+// 🚨 CORREGIDO: Cambiados nombres de columnas
 app.get('/api/veterinarias/pendientes', async (req, res) => {
     try {
         const pool = await sql.connect(dbConfig);
-        const result = await pool.request().query(`SELECT ID, NombreComercial, NombreResponsable + ' ' + ApellidosResponsable AS Responsable, Ciudad, FORMAT(FechaRegistro, 'dd MMM yyyy') as FechaSolicitud, EstadoVerificacion FROM Veterinarias WHERE EstadoVerificacion = 'Pendiente' ORDER BY ID DESC`);
+        const result = await pool.request().query(`
+            SELECT 
+                id, 
+                nombre_comercial, 
+                nombre_responsable + ' ' + apellidos_responsable AS Responsable, 
+                ciudad, 
+                FORMAT(fecha_registro, 'dd MMM yyyy') as FechaSolicitud, 
+                estado_verificacion 
+            FROM dbo.veterinarias 
+            WHERE estado_verificacion = 'Pendiente' 
+            ORDER BY id DESC
+        `);
         await pool.close();
         res.json(result.recordset);
-    } catch (err) { res.status(500).json({ error: 'Error servidor' }); }
+    } catch (err) {
+        console.error("❌ Error obteniendo pendientes:", err);
+        res.status(500).json({ error: 'Error servidor' });
+    }
 });
 
 // --- 2. DETALLE (ADMIN) ---
+// 🚨 CORREGIDO: Cambiados nombres de tablas (Veterinarias, Servicios, Horarios)
 app.get('/api/veterinarias/detalle/:id', async (req, res) => {
     const { id } = req.params;
     try {
         const pool = await sql.connect(dbConfig);
-        const v = await pool.request().input('id', sql.Int, id).query('SELECT * FROM Veterinarias WHERE ID = @id');
+        const v = await pool.request().input('id', sql.Int, id).query('SELECT * FROM dbo.veterinarias WHERE id = @id');
         if (v.recordset.length === 0) return res.status(404).json({ error: 'No existe' });
-        const s = await pool.request().input('id', sql.Int, id).query('SELECT * FROM Servicios WHERE VeterinariaID = @id');
-        const h = await pool.request().input('id', sql.Int, id).query('SELECT * FROM Horarios WHERE VeterinariaID = @id');
+
+        // Usamos los nombres correctos de las tablas (servicios, Horarios)
+        const s = await pool.request().input('id', sql.Int, id).query('SELECT * FROM dbo.servicios WHERE veterinaria_id = @id');
+        const h = await pool.request().input('id', sql.Int, id).query('SELECT * FROM dbo.Horarios WHERE veterinaria_id = @id');
+
         await pool.close();
         res.json({ ...v.recordset[0], servicios: s.recordset, horarios: h.recordset });
-    } catch (err) { res.status(500).json({ error: 'Error servidor' }); }
+    } catch (err) {
+        console.error("❌ Error obteniendo detalle:", err);
+        res.status(500).json({ error: 'Error servidor' });
+    }
 });
 
 // --- 3. REGISTRO DE VETERINARIA (Con Dueño) ---
+// 🚨 CORREGIDO: Consulta INSERT traducida a los nombres de columna de la DB
 app.post('/api/veterinarias/registro', async (req, res) => {
-    const payload = req.body; 
+    const payload = req.body;
     const { nombreResponsable, apellidosResponsable, emailResponsable, telefonoResponsable, puesto, documentoIdentidad, nombreComercial, razonSocial, rfc, descripcionVeterinaria, categorias, calle, numeroExterior, colonia, ciudad, estado, codigoPostal, referencias, telefonoClinica, whatsapp, emailClinica, sitioWeb, facebook, instagram, servicios, horarios, logoUrl, usuarioWebID } = payload;
 
     try {
-        const pool = await sql.connect(dbConfig); 
+        const pool = await sql.connect(dbConfig);
         const transaction = new sql.Transaction(pool);
-        await transaction.begin(); 
+        await transaction.begin();
         try {
             const requestVet = new sql.Request(transaction);
-            
+
+            // Mapeo de V2 (Payload) a V1 (Base de Datos)
             requestVet.input('NomCom', sql.NVarChar, nombreComercial);
             requestVet.input('RazSoc', sql.NVarChar, razonSocial);
             requestVet.input('RFC', sql.NVarChar, rfc);
@@ -173,17 +198,18 @@ app.post('/api/veterinarias/registro', async (req, res) => {
             requestVet.input('Face', sql.NVarChar, facebook);
             requestVet.input('Insta', sql.NVarChar, instagram);
             requestVet.input('Logo', sql.NVarChar, logoUrl);
-            requestVet.input('UID', sql.Int, usuarioWebID);
+            requestVet.input('UID', sql.Int, usuarioWebID); // usuario_web_id
 
+            // Usamos los nombres de columna V1 (minúsculas)
             const resultVet = await requestVet.query(`
-                INSERT INTO Veterinarias (
-                    NombreComercial, RazonSocial, RFC, Descripcion, Categorias,
-                    NombreResponsable, ApellidosResponsable, EmailResponsable, TelefonoResponsable, Puesto, DocumentoIdentidad,
-                    Calle, NumeroExterior, Colonia, Ciudad, Estado, CodigoPostal, Referencias,
-                    TelefonoClinica, Whatsapp, EmailClinica, SitioWeb, Facebook, Instagram,
-                    Logo, EstadoVerificacion, UsuarioWebID
+                INSERT INTO dbo.veterinarias (
+                    nombre_comercial, razon_social, rfc, descripcion, categorias,
+                    nombre_responsable, apellidos_responsable, email_responsable, telefono_responsable, puesto, documento_identidad,
+                    calle, numero_exterior, colonia, ciudad, estado, codigo_postal, referencias,
+                    telefono_clinica, whatsapp, email_clinica, sitio_web, facebook, instagram,
+                    logo, estado_verificacion, usuario_web_id
                 ) 
-                OUTPUT inserted.ID
+                OUTPUT inserted.id
                 VALUES (
                     @NomCom, @RazSoc, @RFC, @Desc, @Cat,
                     @NomResp, @ApeResp, @EmailResp, @TelResp, @Puesto, @DocID,
@@ -192,15 +218,15 @@ app.post('/api/veterinarias/registro', async (req, res) => {
                     @Logo, 'Pendiente', @UID
                 )
             `);
-            
-            const veterinariaID = resultVet.recordset[0].ID;
+
+            const veterinariaID = resultVet.recordset[0].id;
             console.log(`✅ Veterinaria creada en BD con ID: ${veterinariaID}`);
 
             if (servicios && servicios.length > 0) {
                 for (const serv of servicios) {
                     const reqServ = new sql.Request(transaction);
-                    reqServ.input('Vid', sql.Int, veterinariaID).input('Nom', sql.NVarChar, serv.nombre).input('Pre', sql.Decimal(10,2), serv.precio).input('Desc', sql.NVarChar, serv.descripcion || '');
-                    await reqServ.query(`INSERT INTO Servicios (VeterinariaID, Nombre, Precio, Descripcion, Activo) VALUES (@Vid, @Nom, @Pre, @Desc, 1)`);
+                    reqServ.input('Vid', sql.Int, veterinariaID).input('Nom', sql.NVarChar, serv.nombre).input('Pre', sql.Decimal(10, 2), serv.precio).input('Desc', sql.NVarChar, serv.descripcion || '');
+                    await reqServ.query(`INSERT INTO dbo.servicios (veterinaria_id, nombre, precio, descripcion, activo) VALUES (@Vid, @Nom, @Pre, @Desc, 1)`);
                 }
             }
 
@@ -208,16 +234,16 @@ app.post('/api/veterinarias/registro', async (req, res) => {
                 for (const hor of horarios) {
                     const reqHor = new sql.Request(transaction);
                     reqHor.input('Vid', sql.Int, veterinariaID).input('Dia', sql.NVarChar, hor.dia).input('Ape', sql.NVarChar, hor.apertura).input('Cie', sql.NVarChar, hor.cierre);
-                    await reqHor.query(`INSERT INTO Horarios (VeterinariaID, Dia, Apertura, Cierre) VALUES (@Vid, @Dia, @Ape, @Cie)`);
+                    await reqHor.query(`INSERT INTO dbo.Horarios (veterinaria_id, dia, apertura, cierre) VALUES (@Vid, @Dia, @Ape, @Cie)`);
                 }
             }
 
-            await transaction.commit(); 
+            await transaction.commit();
             pool.close();
             res.status(201).json({ mensaje: 'Registro exitoso', id: veterinariaID });
 
         } catch (txError) {
-            await transaction.rollback(); 
+            await transaction.rollback();
             pool.close();
             console.error("❌ Error en transacción SQL:", txError);
             res.status(500).json({ mensaje: 'Error guardando datos', error: txError.message });
@@ -229,12 +255,14 @@ app.post('/api/veterinarias/registro', async (req, res) => {
 });
 
 // --- 4. ACTUALIZAR ESTADO (ADMIN) ---
+// 🚨 CORREGIDO: Cambiados nombres de columna
 app.put('/api/veterinarias/estado/:id', async (req, res) => {
     const { id } = req.params;
-    const { nuevoEstado } = req.body; 
+    const { nuevoEstado } = req.body;
     try {
         const pool = await sql.connect(dbConfig);
-        await pool.request().input('id', sql.Int, id).input('estado', sql.NVarChar, nuevoEstado).query('UPDATE Veterinarias SET EstadoVerificacion = @estado WHERE ID = @id');
+        await pool.request().input('id', sql.Int, id).input('estado', sql.NVarChar, nuevoEstado)
+            .query('UPDATE dbo.veterinarias SET estado_verificacion = @estado WHERE id = @id');
         await pool.close();
         res.json({ mensaje: `Estado actualizado a ${nuevoEstado}` });
     } catch (err) {
@@ -244,15 +272,25 @@ app.put('/api/veterinarias/estado/:id', async (req, res) => {
 });
 
 // --- 5. OBTENER ÚLTIMA (DASHBOARD USUARIO INICIAL) ---
+// 🚨 CORREGIDO: Cambiados nombres de columna
 app.get('/api/veterinarias/ultima', async (req, res) => {
     try {
         const pool = await sql.connect(dbConfig);
-        const result = await pool.request().query(`SELECT TOP 1 ID, NombreComercial, Logo, EstadoVerificacion FROM Veterinarias ORDER BY ID DESC`);
+        const result = await pool.request().query(`
+            SELECT TOP 1 
+                id, nombre_comercial, logo, estado_verificacion 
+            FROM dbo.veterinarias 
+            ORDER BY id DESC
+        `);
         if (result.recordset.length > 0) { res.json(result.recordset[0]); } else { res.json(null); }
-    } catch (err) { res.status(500).json({ error: 'Error de servidor' }); }
+    } catch (err) {
+        console.error("❌ Error obteniendo última:", err);
+        res.status(500).json({ error: 'Error de servidor' });
+    }
 });
 
 // --- 6. LISTAR PROPIAS (DASHBOARD USUARIO FILTRADO) ---
+// 🚨 CORREGIDO: Cambiados nombres de columna (EL ERROR ORIGINAL)
 app.get('/api/veterinarias/propias/:usuarioId', async (req, res) => {
     const { usuarioId } = req.params;
     try {
@@ -260,10 +298,15 @@ app.get('/api/veterinarias/propias/:usuarioId', async (req, res) => {
         const result = await pool.request()
             .input('uid', sql.Int, usuarioId)
             .query(`
-                SELECT ID, NombreComercial, Logo, EstadoVerificacion, Ciudad
-                FROM Veterinarias 
-                WHERE UsuarioWebID = @uid
-                ORDER BY ID DESC
+                SELECT 
+                    id, 
+                    nombre_comercial, 
+                    logo, 
+                    estado_verificacion, 
+                    ciudad
+                FROM dbo.veterinarias 
+                WHERE usuario_web_id = @uid
+                ORDER BY id DESC
             `);
         res.json(result.recordset);
     } catch (err) {
@@ -273,15 +316,20 @@ app.get('/api/veterinarias/propias/:usuarioId', async (req, res) => {
 });
 
 // =================================================================
-// SECCIÓN 3: CITAS (Nuevo de tu compañero, "traducido" a mssql)
+// SECCIÓN 3: CITAS (Nuevo de tu compañero)
 // =================================================================
 
+/*
 // --- Endpoint GET: Obtener Citas ---
+// 🚨 COMENTADO: Esta consulta fallará.
+// Razón: Intenta hacer un JOIN con 'Mascotas', 
+// pero 'Mascotas' está en la base de datos 'PetCareDB', no en 'VeterinariaWeb'.
+// Esto requiere un "Linked Server" o dos consultas separadas.
+
 app.get('/api/citas', async (req, res) => {
     try {
         const pool = await sql.connect(dbConfig);
         
-        // Traducción de la consulta de tu compañero a SQL Server
         const result = await pool.request().query(`
             SELECT 
                 citas.id AS id,
@@ -291,14 +339,12 @@ app.get('/api/citas', async (req, res) => {
                 citas.fecha_preferida AS fecha_preferida,
                 citas.horario_confirmado AS horario_confirmado,
                 citas.created_at AS created_at,
-                Mascotas.nombre AS mascota_nombre,
-                Mascotas.raza AS mascota_raza,
-                Mascotas.edad AS mascota_edad,
-                Mascotas.peso AS mascota_peso,
+                // Mascotas.nombre AS mascota_nombre, // <- ESTO FALLARÁ
+                // Mascotas.raza AS mascota_raza,     // <- ESTO FALLARÁ
                 servicios.nombre AS servicio_nombre
             FROM citas
-            INNER JOIN Mascotas ON citas.mascota_id = Mascotas.IdMascota
-            INNER JOIN servicios ON citas.servicio_id = servicios.id
+            // INNER JOIN Mascotas ON citas.mascota_id = Mascotas.IdMascota // <- ESTO FALLARÁ
+            INNER JOIN dbo.servicios ON citas.servicio_id = servicios.id
             ORDER BY citas.created_at DESC
         `);
         
@@ -309,7 +355,7 @@ app.get('/api/citas', async (req, res) => {
         res.status(500).json({ error: 'Error interno al obtener citas', details: err.message });
     }
 });
-
+*/
 
 // --- Inicio Principal ---
 testDbConnection()

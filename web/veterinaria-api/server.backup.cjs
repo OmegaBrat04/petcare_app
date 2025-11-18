@@ -273,43 +273,111 @@ app.get('/api/veterinarias/propias/:usuarioId', async (req, res) => {
 });
 
 // =================================================================
-// SECCIÓN 3: CITAS (Nuevo de tu compañero, "traducido" a mssql)
+// SECCIÓN 3: GESTIÓN DE CITAS (COMPLETA Y CORREGIDA)
 // =================================================================
 
-// --- Endpoint GET: Obtener Citas ---
-app.get('/api/citas', async (req, res) => {
+// --- 1. OBTENER CITAS DE UNA VETERINARIA ---
+app.get('/api/citas/:veterinariaId', async (req, res) => {
+    const { veterinariaId } = req.params;
+
     try {
         const pool = await sql.connect(dbConfig);
-        
-        // Traducción de la consulta de tu compañero a SQL Server
-        const result = await pool.request().query(`
+
+        // NOTA: Verifica que en tu tabla 'Mascotas' la columna del nombre sea 'Nombre'
+        const query = `
             SELECT 
-                citas.id AS id,
-                citas.status AS status,
-                citas.notas AS notas,
-                citas.telefono_contacto AS telefono_contacto,
-                citas.fecha_preferida AS fecha_preferida,
-                citas.horario_confirmado AS horario_confirmado,
-                citas.created_at AS created_at,
-                Mascotas.nombre AS mascota_nombre,
-                Mascotas.raza AS mascota_raza,
-                Mascotas.edad AS mascota_edad,
-                Mascotas.peso AS mascota_peso,
-                servicios.nombre AS servicio_nombre
-            FROM citas
-            INNER JOIN Mascotas ON citas.mascota_id = Mascotas.IdMascota
-            INNER JOIN servicios ON citas.servicio_id = servicios.id
-            ORDER BY citas.created_at DESC
-        `);
-        
-        res.json(result.recordset);
+                c.id,
+                m.Nombre AS NombreMascota,       
+                s.Nombre AS NombreServicio,      
+                c.fecha_preferida,
+                c.status,                        -- 'pending', 'confirmed', 'cancelled'
+                c.created_at,
+                c.telefono_contacto,
+                c.notas
+            FROM dbo.citas c
+            INNER JOIN dbo.Mascotas m ON c.mascota_id = m.IdMascota
+            LEFT JOIN dbo.servicios s ON c.servicio_id = s.id
+            WHERE c.veterinaria_id = @vid
+            ORDER BY c.created_at DESC
+        `;
+
+        const result = await pool.request()
+            .input('vid', sql.Int, veterinariaId)
+            .query(query);
+
+        // Formatear datos para React
+        const citasFormateadas = result.recordset.map(row => {
+            
+            // Traducción: BD (Inglés) -> Web (Español)
+            let estadoEsp = 'Pendiente';
+            if (row.status === 'confirmed') estadoEsp = 'Confirmada';
+            if (row.status === 'cancelled') estadoEsp = 'Rechazada';
+
+            // Formato de fechas legible
+            const fechaPref = new Date(row.fecha_preferida).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' });
+            const fechaSol = new Date(row.created_at).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' });
+
+            return {
+                id: row.id.toString(),
+                mascota: row.NombreMascota || 'Desconocida',
+                servicio: row.NombreServicio || 'Consulta General',
+                fechaPreferida: fechaPref,
+                estado: estadoEsp,
+                solicitada: fechaSol,
+                detalles: {
+                    telefono: row.telefono_contacto || 'No registrado',
+                    motivo: row.notas || 'Sin detalles adicionales'
+                }
+            };
+        });
+
+        await pool.close();
+        res.json(citasFormateadas);
 
     } catch (err) {
         console.error("❌ Error al obtener citas:", err.message);
-        res.status(500).json({ error: 'Error interno al obtener citas', details: err.message });
+        res.status(500).json({ error: 'Error interno al obtener citas' });
     }
 });
 
+// --- 2. ACTUALIZAR ESTADO DE CITA (Confirmar/Rechazar) ---
+app.put('/api/citas/estado/:id', async (req, res) => {
+    const { id } = req.params;
+    const { estado } = req.body; // Recibimos 'Confirmada' o 'Rechazada'
+
+    // Traducción: Web (Español) -> BD (Inglés)
+    let dbStatus = 'pending';
+    if (estado === 'Confirmada') dbStatus = 'confirmed';
+    if (estado === 'Rechazada') dbStatus = 'cancelled';
+
+    try {
+        const pool = await sql.connect(dbConfig);
+        
+        const result = await pool.request()
+            .input('id', sql.BigInt, id)
+            .input('status', sql.NVarChar, dbStatus)
+            .query(`
+                UPDATE dbo.citas 
+                SET 
+                    status = @status,
+                    updated_at = SYSDATETIMEOFFSET()
+                OUTPUT inserted.id
+                WHERE id = @id
+            `);
+
+        if (result.recordset.length === 0) {
+            await pool.close();
+            return res.status(404).json({ message: 'Cita no encontrada' });
+        }
+
+        await pool.close();
+        res.json({ id: id, estado: estado, message: 'Estado actualizado correctamente' });
+
+    } catch (err) {
+        console.error("❌ Error al actualizar cita:", err.message);
+        res.status(500).json({ error: 'Error al actualizar estado de la cita' });
+    }
+});
 
 // --- Inicio Principal ---
 testDbConnection()

@@ -1,0 +1,293 @@
+/* =========================================
+   CONTENEDOR PRINCIPAL
+   ========================================= */
+.citas-container {
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f0f2f5;
+    min-height: 100vh;
+}
+
+/* =========================================
+   HEADER Y BOTÓN DE REGRESO
+   ========================================= */
+.citas-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 15px; /* Espacio entre la flecha y el título */
+}
+
+.citas-header h2 {
+    margin: 0;
+    color: #333;
+    font-size: 24px;
+}
+
+/* Estilos del botón de flecha */
+.back-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #555;
+    transition: all 0.2s ease;
+}
+
+.back-btn:hover {
+    background-color: #e4e6eb;
+    color: #000;
+    transform: translateX(-3px); /* Efecto de movimiento a la izquierda */
+}
+
+.back-btn svg {
+    width: 24px;
+    height: 24px;
+}
+
+/* =========================================
+   FILTROS
+   ========================================= */
+.filtro-estado select {
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background-color: #fff;
+    cursor: pointer;
+    font-size: 14px;
+    color: #555;
+    outline: none;
+}
+
+/* =========================================
+   CONTENIDO PRINCIPAL (GRID)
+   ========================================= */
+.citas-content {
+    display: flex;
+    gap: 20px;
+}
+
+/* --- LISTA DE CITAS (IZQUIERDA) --- */
+.citas-list {
+    flex: 2;
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    padding: 20px;
+}
+
+.search-input {
+    width: 100%;
+    padding: 10px 15px;
+    margin-bottom: 20px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    box-sizing: border-box;
+    font-size: 14px;
+    outline: none;
+}
+
+.search-input:focus {
+    border-color: #007bff;
+}
+
+.citas-list table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.citas-list th, .citas-list td {
+    text-align: left;
+    padding: 12px 15px;
+    border-bottom: 1px solid #eee;
+    font-size: 14px;
+}
+
+.citas-list th {
+    background-color: #f8f9fa;
+    color: #666;
+    font-weight: 600;
+}
+
+.citas-list tbody tr {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.citas-list tbody tr:hover {
+    background-color: #f2f2f2;
+}
+
+.citas-list tbody tr.selected-row {
+    background-color: #e6f7ff; /* Azul claro para selección */
+}
+
+/* --- BADGES DE ESTADO --- */
+.estado-badge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+    display: inline-block;
+}
+
+.estado-badge.pendiente {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.estado-badge.confirmada {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.estado-badge.rechazada {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+/* =========================================
+   DETALLES DE LA CITA (DERECHA)
+   ========================================= */
+.cita-details {
+    flex: 1;
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    padding: 20px;
+    height: fit-content; /* Se ajusta al contenido */
+}
+
+.no-cita-selected {
+    text-align: center;
+    color: #888;
+    margin-top: 50px;
+    font-style: italic;
+}
+
+.details-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.details-header h3 {
+    margin: 0;
+    color: #333;
+    font-size: 18px;
+}
+
+.sub-header {
+    color: #888;
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 14px;
+}
+
+/* --- BOTONES DE ACCIÓN --- */
+.details-actions {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.details-actions button {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+    flex: 1;
+    transition: all 0.2s ease;
+}
+
+.details-actions button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.confirm-button {
+    background-color: #007bff;
+    color: white;
+}
+
+.confirm-button:hover:not(:disabled) {
+    background-color: #0056b3;
+}
+
+.reject-button {
+    background-color: #fff;
+    color: #333;
+    border: 1px solid #ccc;
+}
+
+.reject-button:hover:not(:disabled) {
+    background-color: #f8d7da;
+    color: #721c24;
+    border-color: #f5c6cb;
+}
+
+.contact-button {
+    background-color: #fff;
+    color: #333;
+    border: 1px solid #ccc;
+}
+
+.contact-button:hover:not(:disabled) {
+    background-color: #e2e6ea;
+}
+
+/* --- INFORMACIÓN DETALLADA --- */
+.details-info {
+    border-top: 1px solid #eee;
+    padding-top: 15px;
+    margin-bottom: 20px;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.info-row p {
+    margin: 0;
+    color: #555;
+    font-size: 14px;
+}
+
+.info-row p strong {
+    color: #333;
+}
+
+/* --- CAJA DE MOTIVO --- */
+.details-motivo {
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    padding: 15px;
+    color: #555;
+    font-size: 14px;
+    border-left: 4px solid #007bff; /* Un detalle visual extra */
+}
+
+.details-motivo p:first-child {
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 8px;
+    margin-top: 0;
+}

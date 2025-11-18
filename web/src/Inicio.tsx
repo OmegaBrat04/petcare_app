@@ -55,11 +55,12 @@ const Inicio: React.FC = () => {
                     </div>
                 </div>
 
-                {/* --- MENÚ LIMPIO --- */}
+                {/* --- MENÚ DE NAVEGACIÓN --- */}
                 <nav className="navbar-menu">
                     <Link to="/inicio" className="menu-item active">Inicio</Link>
-                    {/* Solo visual */}
-                    <span className="menu-item" style={{cursor: 'pointer'}}>Citas</span>
+                    
+                    {/* AQUI ESTÁ EL CAMBIO: Ahora es un Link real hacia /citas */}
+                    <Link to="/citas" className="menu-item">Citas</Link>
                 </nav>
 
                 <div className="navbar-right" style={{gap: '15px'}}>
@@ -127,8 +128,6 @@ const Inicio: React.FC = () => {
                                                     }}>
                                                         {vet.EstadoVerificacion}
                                                     </span>
-                                                    
-                                                    {/* EL BOTÓN "GESTIONAR" YA NO ESTÁ AQUÍ */}
                                                 </div>
                                             </div>
                                         );

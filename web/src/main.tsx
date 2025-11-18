@@ -14,36 +14,36 @@ import DetalleSolicitud from './DetalleSolicitud'
 // --- COMPONENTES DE TU COMPAÑERO (Nueva funcionalidad) ---
 import Login from './Login';
 import RegistroUsuario from './RegistroUsuario'; 
-import PacientesUI from './Pacientes'
+
+// --- NUEVO: IMPORTAR PANTALLA DE CITAS ---
+// ⚠️ IMPORTANTE: Verifica si guardaste Citas.tsx en una carpeta "components" o en la raíz.
+// Si está en src/components/Citas.tsx usa esta línea:
+import Citas from './Citas'; 
+// Si está en la misma carpeta que este archivo, usa: import Citas from './Citas';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <BrowserRouter>
       <Routes>
-        {/* 1. CAMBIO PRINCIPAL: 
-            La ruta raíz "/" ahora carga el Login.
-            Esto es necesario para que la funcionalidad de autenticación sirva.
-        */}
+        {/* 1. LOGIN */}
         <Route path="/" element={<Login/>} />
 
-        {/* Ruta de Registro de Usuario (Nueva funcionalidad) */}
+        {/* Ruta de Registro de Usuario */}
         <Route path="/register" element={<RegistroUsuario />} />
 
-        {/* 2. TUS RUTAS DE SIEMPRE:
-            Mantenemos /inicio para que puedas acceder a tu dashboard.
-            Agregamos /dashboard también porque tu compañero lo usará así.
-        */}
+        {/* 2. INICIO / DASHBOARD */}
         <Route path="/inicio" element={<Inicio />} />
         <Route path="/dashboard" element={<Inicio />} />
 
-        {/* Ruta de Registro de Veterinaria (Compartida) */}
+        {/* Ruta de Registro de Veterinaria */}
         <Route path="/registro-veterinaria" element={<RegistroVeterinariaConexion />} />
 
-        {/* 3. RUTAS DE ADMIN (Tuyas Exclusivas):
-            Estas no las tenía tu compañero, pero son vitales para tu parte.
-        */}
+        {/* 3. RUTAS DE ADMIN */}
         <Route path="/admin" element={<InicioAdmin />} />
         <Route path="/admin/solicitud/:id" element={<DetalleSolicitud />} />
+
+        {/* 4. RUTA DE CITAS (NUEVA) */}
+        <Route path="/citas" element={<Citas />} />
 
       </Routes>
     </BrowserRouter>

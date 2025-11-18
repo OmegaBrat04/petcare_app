@@ -1,4 +1,6 @@
-enum Estatus { pending, confirmed, cancelled }
+import 'dart:ui';
+
+enum Estatus { pending, confirmed, cancelled, completed }
 
 class Cita {
   final int id;
@@ -27,14 +29,18 @@ class Cita {
     required this.creadoEn,
   });
 
-  factory Cita
-.fromMap(Map<String, dynamic> m) {
-   Estatus parseStatus(String s) {
-      return s == 'confirmed'
-          ? Estatus.confirmed
-          : s == 'cancelled'
-              ? Estatus.cancelled
-              : Estatus.pending;
+  factory Cita.fromMap(Map<String, dynamic> m) {
+    Estatus parseStatus(String s) {
+      switch (s.toLowerCase()) {
+        case 'confirmed':
+          return Estatus.confirmed;
+        case 'cancelled':
+          return Estatus.cancelled;
+        case 'completed':
+          return Estatus.completed;
+        default:
+          return Estatus.pending;
+      }
     }
 
     return Cita
@@ -53,6 +59,8 @@ class Cita {
     );
   }
 
+  factory Cita.fromJson(Map<String, dynamic> json) => Cita.fromMap(json);
+
   Map<String, dynamic> toMap() => {
         'id': id,
         'mascota_id': mascotaId,
@@ -66,4 +74,30 @@ class Cita {
         'notas': notas,
         'created_at': creadoEn.toIso8601String(),
       };
+
+  String get statusLabel {
+    switch (estatus) {
+      case Estatus.confirmed:
+        return 'Confirmada';
+      case Estatus.cancelled:
+        return 'Cancelada';
+      case Estatus.completed:
+        return 'Completada';
+      default:
+        return 'Pendiente';
+    }
+  }
+
+  Color get statusColor {
+    switch (estatus) {
+      case Estatus.confirmed:
+        return const Color(0xFF4CAF50);
+      case Estatus.cancelled:
+        return const Color(0xFFF44336);
+      case Estatus.completed:
+        return const Color(0xFF2196F3);
+      default:
+        return const Color(0xFFFF9800);
+    }
+  }
 }

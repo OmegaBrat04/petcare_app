@@ -14,6 +14,7 @@ class PetController extends ChangeNotifier {
 
   List<Mascota> _pets = [];
   List<Mascota> get pets => _pets;
+  List<Mascota> get items => _pets;
 
   Future<String?> addPet({
     required File photo,
@@ -65,7 +66,9 @@ class PetController extends ChangeNotifier {
         return 'Respuesta inesperada del servidor.';
       }
 
-      if (result['success'] == true) return null;
+      if (result['success'] == true) {
+        await fetchPets();
+        return null;}
       return result['message']?.toString() ??
           'Error desconocido al guardar mascota';
     } catch (e, st) {

@@ -1,108 +1,249 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:intl/intl.dart';
+import 'package:petcare_app/App/Controlador/citas_controller.dart';
+import 'package:petcare_app/App/Controlador/mascota_controller.dart';
+import 'package:petcare_app/App/Controlador/veterinaria_controller.dart';
+import 'package:petcare_app/App/Modelo/EstatusCita.dart';
+import 'package:petcare_app/App/Modelo/Mascotas.dart';
+import 'package:petcare_app/App/Modelo/Clinica.dart';
 
 const _kPrimary = Color(0xFF2F76A6);
 const _kPrimaryDark = Color(0xFF0E3A5C);
 const _kBg = Color(0xFFF7F9FC);
 
-const _h1 = TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.black87);
-const _h2 = TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.black87);
-const _body = TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black87);
+const _h1 = TextStyle(
+  fontSize: 22,
+  fontWeight: FontWeight.w900,
+  color: Colors.black87,
+);
+const _h2 = TextStyle(
+  fontSize: 16,
+  fontWeight: FontWeight.w800,
+  color: Colors.black87,
+);
+const _body = TextStyle(
+  fontSize: 14,
+  fontWeight: FontWeight.w600,
+  color: Colors.black87,
+);
 
 RoundedRectangleBorder _surface16 = RoundedRectangleBorder(
   borderRadius: BorderRadius.circular(16),
 );
 
-
-class CitasPage extends StatelessWidget {
+class CitasPage extends StatefulWidget {
   const CitasPage({super.key});
+
+  @override
+  State<CitasPage> createState() => _CitasPageState();
+}
+
+class _CitasPageState extends State<CitasPage> {
+  String _query = '';
+
+  List<Cita> _filterCitas(
+    List<Cita> source,
+    String q,
+    List<Mascota> mascotas,
+    List<Clinica> vets,
+  ) {
+    final query = q.trim().toLowerCase();
+    if (query.isEmpty) return source;
+
+    String petName(int id) {
+      try {
+        return mascotas.firstWhere((m) => m.idMascota == id).nombre;
+      } catch (_) {
+        return '';
+      }
+    }
+
+    String vetName(int id) {
+      try {
+        return vets.firstWhere((v) => v.id == id).name;
+      } catch (_) {
+        return '';
+      }
+    }
+
+    return source.where((c) {
+      final pet = petName(c.mascotaId).toLowerCase();
+      final vet = vetName(c.veterinariaId).toLowerCase();
+      final fecha =
+          DateFormat('dd/MM/yyyy').format(c.fechaPreferida).toLowerCase();
+      return pet.contains(query) ||
+          vet.contains(query) ||
+          fecha.contains(query);
+    }).toList();
+  }
+
+  Map<String, List<Cita>> _groupByDate(List<Cita> list) {
+    final Map<String, List<Cita>> out = {};
+    for (final c in list) {
+      final key = DateFormat('dd/MM/yyyy').format(c.fechaPreferida);
+      out.putIfAbsent(key, () => []).add(c);
+    }
+    return out;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<CitasController>().fetchCitas();
+      final petCtrl = context.read<PetController>();
+      if (petCtrl.pets.isEmpty) petCtrl.fetchPets();
+      final vetCtrl = context.read<VeterinariaController>();
+      if (vetCtrl.veterinarias.isEmpty) vetCtrl.fetchVeterinarias();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _kBg,
       appBar: AppBar(
-        title: const Text('Citas', style: TextStyle(fontWeight: FontWeight.w800)),
+        title: const Text(
+          'Citas',
+          style: TextStyle(fontWeight: FontWeight.w800),
+        ),
         centerTitle: true,
         elevation: 0,
         backgroundColor: _kBg,
         foregroundColor: Colors.black87,
       ),
-      
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
-        children: const [
-          _NextCard(),
-          SizedBox(height: 12),
-          _FiltersBar(),
-          SizedBox(height: 12),
-          _DateStrip(),
-          SizedBox(height: 12),
-          _DayGroup(
-            title: '02/01/2025',
-            items: [
-              _ApptViewData(
-                petInitial: 'L',
-                petAndType: 'Luna • Consulta',
-                dateTimeStr: '02/01/2025 • 09:00–09:30',
-                clinic: 'Vet Centro Norte',
-                status: 'Pendiente',
-                statusColor: Colors.orange,
+      body: Consumer3<CitasController, PetController, VeterinariaController>(
+        builder: (context, citasCtrl, petCtrl, vetCtrl, _) {
+          if (citasCtrl.loading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (citasCtrl.error != null) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text(citasCtrl.error!, style: _body),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: () => citasCtrl.fetchCitas(),
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Reintentar'),
+                  ),
+                ],
               ),
-            ],
-          ),
-          SizedBox(height: 10),
-          _DayGroup(
-            title: '05/01/2025',
-            items: [
-              _ApptViewData(
-                petInitial: 'R',
-                petAndType: 'Rocky • Control',
-                dateTimeStr: '05/01/2025 • 11:30–12:00',
-                clinic: 'Vet Express',
-                status: 'Confirmada',
-                statusColor: Colors.green,
-              ),
-              _ApptViewData(
-                petInitial: 'L',
-                petAndType: 'Luna • Vacuna',
-                dateTimeStr: '05/01/2025 • 16:00–16:30',
-                clinic: 'Clínica Mascotitas',
-                status: 'Pendiente',
-                statusColor: Colors.orange,
-              ),
-            ],
-          ),
-          SizedBox(height: 10),
-          _DayGroup(
-            title: '12/12/2024',
-            items: [
-              _ApptViewData(
-                petInitial: 'T',
-                petAndType: 'Toby • Consulta',
-                dateTimeStr: '12/12/2024 • 16:00–16:30',
-                clinic: 'Vet Express',
-                status: 'Cancelada',
-                statusColor: Colors.red,
-              ),
-            ],
-          ),
-        ],
+            );
+          }
+
+          final List<Mascota> mascotas =
+              (petCtrl.pets.isNotEmpty ? petCtrl.pets : petCtrl.items)
+                  .cast<Mascota>();
+          final List<Clinica> veterinarias = vetCtrl.veterinarias;
+
+          final filtradas = _filterCitas(
+            citasCtrl.citas,
+            _query,
+            mascotas,
+            veterinarias,
+          );
+          final citasPorFecha = _groupByDate(filtradas);
+
+          Cita? proxima;
+          if (filtradas.isNotEmpty) {
+            final ahora = DateTime.now();
+            final futuras =
+                filtradas
+                    .where(
+                      (c) =>
+                          (c.estatus == Estatus.pending ||
+                              c.estatus == Estatus.confirmed) &&
+                          c.fechaPreferida.isAfter(ahora),
+                    )
+                    .toList()
+                  ..sort(
+                    (a, b) => a.fechaPreferida.compareTo(b.fechaPreferida),
+                  );
+            if (futuras.isNotEmpty) proxima = futuras.first;
+          }
+
+          return RefreshIndicator(
+            onRefresh: () => citasCtrl.fetchCitas(),
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
+              children: [
+                if (proxima != null)
+                  _NextCard(
+                    cita: proxima,
+                    mascotas: mascotas,
+                    veterinarias: veterinarias,
+                  ),
+                if (proxima != null) const SizedBox(height: 12),
+                _FiltersBar(
+                  query: _query,
+                  onSearchChanged: (q) => setState(() => _query = q),
+                ),
+                const SizedBox(height: 12),
+                const _DateStrip(),
+                const SizedBox(height: 12),
+                if (citasPorFecha.isEmpty)
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(32),
+                      child: Text('No hay citas registradas', style: _body),
+                    ),
+                  )
+                else
+                  ...citasPorFecha.entries.map((entry) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: _DayGroup(
+                        title: entry.key,
+                        citas: entry.value,
+                        mascotas: mascotas,
+                        veterinarias: veterinarias,
+                      ),
+                    );
+                  }).toList(),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
 }
 
-/// ====== Hero “Próxima cita” (estático) ======
+/// ====== Hero "Próxima cita" ======
 class _NextCard extends StatelessWidget {
-  const _NextCard();
+  final Cita cita;
+  final List<Mascota> mascotas;
+  final List<Clinica> veterinarias;
+  const _NextCard({
+    required this.cita,
+    required this.mascotas,
+    required this.veterinarias,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final citasCtrl = context.read<CitasController>();
+    final mascotaNombre = citasCtrl.getMascotaNombre(cita.mascotaId, mascotas);
+    final vetNombre = citasCtrl.getVeterinariaNombre(
+      cita.veterinariaId,
+      veterinarias,
+    );
+    final inicial = citasCtrl.getPetInitial(cita.mascotaId, mascotas);
+    final diasFaltantes = cita.fechaPreferida.difference(DateTime.now()).inDays;
+
     return Container(
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          begin: Alignment(-1, -1), end: Alignment(1, .6),
+          begin: Alignment(-1, -1),
+          end: Alignment(1, .6),
           colors: [_kPrimaryDark, _kPrimary],
         ),
         borderRadius: BorderRadius.circular(18),
@@ -111,31 +252,76 @@ class _NextCard extends StatelessWidget {
         padding: const EdgeInsets.all(14),
         child: Row(
           children: [
-            const CircleAvatar(
-              radius: 26, backgroundColor: Colors.white,
-              child: Text('L', style: TextStyle(color: _kPrimaryDark, fontWeight: FontWeight.w900, fontSize: 22)),
+            CircleAvatar(
+              radius: 26,
+              backgroundColor: Colors.white,
+              child: Text(
+                inicial,
+                style: const TextStyle(
+                  color: _kPrimaryDark,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 22,
+                ),
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [
-                Text('Próxima cita', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w700)),
-                SizedBox(height: 2),
-                Text('Luna • Consulta', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16)),
-                SizedBox(height: 2),
-                Text('02/01/2025 • 09:00', style: TextStyle(color: Colors.white)),
-                Text('Vet Centro Norte', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w600)),
-              ]),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Próxima cita',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '$mascotaNombre • Consulta',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    DateFormat(
+                      'dd/MM/yyyy • HH:mm',
+                    ).format(cita.horarioConfirmado ?? cita.fechaPreferida),
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                  Text(
+                    vetNombre,
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(width: 8),
             Column(
               children: [
-                _Pill(icon: Icons.hourglass_bottom, text: '3 d'),
+                _Pill(icon: Icons.hourglass_bottom, text: '$diasFaltantes d'),
                 const SizedBox(height: 8),
-                Row(children: [
-                  _RoundBtn(icon: Icons.article_outlined, label: 'Indicaciones'),
-                  SizedBox(width: 6),
-                  _RoundBtn(icon: Icons.edit, label: 'Reagendar'),
-                ]),
+                Row(
+                  children: [
+                    _RoundBtn(
+                      icon: Icons.article_outlined,
+                      label: 'Indicaciones',
+                      onTap: () => _showNotas(context, cita),
+                    ),
+                    const SizedBox(width: 6),
+                    _RoundBtn(
+                      icon: Icons.edit,
+                      label: 'Reagendar',
+                      onTap: () => _toast(context, 'Reagendar (próximamente)'),
+                    ),
+                  ],
+                ),
               ],
             ),
           ],
@@ -146,67 +332,380 @@ class _NextCard extends StatelessWidget {
 }
 
 class _Pill extends StatelessWidget {
-  final IconData icon; final String text;
+  final IconData icon;
+  final String text;
   const _Pill({required this.icon, required this.text});
+
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(999)),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(icon, size: 14, color: _kPrimaryDark),
-        const SizedBox(width: 6),
-        Text(text, style: const TextStyle(fontWeight: FontWeight.w900)),
-      ]),
-    );
-  }
-}
-
-class _RoundBtn extends StatelessWidget {
-  final IconData icon; final String label;
-  const _RoundBtn({required this.icon, required this.label});
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white, shape: const CircleBorder(), elevation: 1,
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: () => _toast(context, '$label (UI demo)'),
-        child: Padding(padding: const EdgeInsets.all(8), child: Icon(icon, color: _kPrimaryDark)),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: _kPrimaryDark),
+          const SizedBox(width: 6),
+          Text(text, style: const TextStyle(fontWeight: FontWeight.w900)),
+        ],
       ),
     );
   }
 }
 
-/// ====== Barra de filtros (solo visual) ======
-class _FiltersBar extends StatelessWidget {
-  const _FiltersBar();
+class _RoundBtn extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  const _RoundBtn({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      shape: const CircleBorder(),
+      elevation: 1,
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Icon(icon, color: _kPrimaryDark),
+        ),
+      ),
+    );
+  }
+}
+
+/// ====== Grupo por día ======
+class _DayGroup extends StatelessWidget {
+  final String title;
+  final List<Cita> citas;
+  final List<Mascota> mascotas;
+  final List<Clinica> veterinarias;
+  const _DayGroup({
+    required this.title,
+    required this.citas,
+    required this.mascotas,
+    required this.veterinarias,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Column(
-      children: const [
-        _SearchBar(hint: 'Buscar clínica, mascota o fecha…'),
-        SizedBox(height: 10),
-        _Segment(title: 'Estado', chips: [
-          _ChipStatic(text: 'Pendiente', color: Colors.orange),
-          _ChipStatic(text: 'Confirmada', color: Colors.green),
-          _ChipStatic(text: 'Cancelada', color: Colors.red),
-        ]),
-        SizedBox(height: 6),
-        _Segment(title: 'Mascota', chips: [
-          _ChipStatic(text: 'Luna', color: _kPrimary),
-          _ChipStatic(text: 'Rocky', color: _kPrimary),
-          _ChipStatic(text: 'Toby', color: _kPrimary),
-        ]),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 12, bottom: 6),
+          child: Text(title, style: _h2),
+        ),
+        ...citas.map(
+          (c) => Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: _ApptCard(
+              cita: c,
+              mascotas: mascotas,
+              veterinarias: veterinarias,
+            ),
+          ),
+        ),
       ],
     );
   }
 }
 
-class _SearchBar extends StatelessWidget {
+/// ====== Tarjeta de cita ======
+class _ApptCard extends StatelessWidget {
+  final Cita cita;
+  final List<Mascota> mascotas;
+  final List<Clinica> veterinarias;
+  const _ApptCard({
+    required this.cita,
+    required this.mascotas,
+    required this.veterinarias,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final citasCtrl = context.read<CitasController>();
+    final mascotaNombre = citasCtrl.getMascotaNombre(cita.mascotaId, mascotas);
+    final vetNombre = citasCtrl.getVeterinariaNombre(
+      cita.veterinariaId,
+      veterinarias,
+    );
+    final inicial = citasCtrl.getPetInitial(cita.mascotaId, mascotas);
+    final horaStr = DateFormat(
+      'HH:mm',
+    ).format(cita.horarioConfirmado ?? cita.fechaPreferida);
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Column(
+          children: [
+            Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                color: cita.statusColor,
+                shape: BoxShape.circle,
+              ),
+            ),
+            Container(
+              width: 2,
+              height: 68,
+              margin: const EdgeInsets.only(top: 4),
+              color: cita.statusColor.withOpacity(.25),
+            ),
+          ],
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Card(
+            elevation: 0,
+            color: Colors.white,
+            shape: _surface16,
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    backgroundColor: _kPrimary.withOpacity(.12),
+                    child: Text(
+                      inicial,
+                      style: const TextStyle(
+                        color: _kPrimaryDark,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('$mascotaNombre • Consulta', style: _h2),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${DateFormat('dd/MM/yyyy').format(cita.fechaPreferida)} • $horaStr',
+                          style: _body,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          vetNombre,
+                          style: _body.copyWith(color: Colors.black54),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            _StatusChip(
+                              label: cita.statusLabel,
+                              color: cita.statusColor,
+                            ),
+                            const SizedBox(width: 3),
+                            TextButton.icon(
+                              onPressed: () => _showNotas(context, cita),
+                              icon: const Icon(
+                                Icons.article_outlined,
+                                size: 18,
+                              ),
+                              label: const Text('Indicaciones'),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  PopupMenuButton<String>(
+                    onSelected: (v) => _handleMenu(context, v, cita),
+                    itemBuilder:
+                        (ctx) => const [
+                          PopupMenuItem(
+                            value: 'reschedule',
+                            child: Text('Reagendar'),
+                          ),
+                          PopupMenuItem(
+                            value: 'cancel',
+                            child: Text('Cancelar'),
+                          ),
+                        ],
+                    child: const Icon(Icons.more_horiz),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _StatusChip extends StatelessWidget {
+  final String label;
+  final Color color;
+  const _StatusChip({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(.12),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withOpacity(.5)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            label == 'Pendiente'
+                ? Icons.hourglass_bottom
+                : label == 'Confirmada'
+                ? Icons.check_circle
+                : Icons.cancel,
+            size: 16,
+            color: color,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(color: color, fontWeight: FontWeight.w900),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// ====== Barra de filtros ======
+class _FiltersBar extends StatelessWidget {
+  final String query;
+  final ValueChanged<String> onSearchChanged;
+  const _FiltersBar({required this.query, required this.onSearchChanged});
+  @override
+  Widget build(BuildContext context) {
+    return Consumer2<CitasController, PetController>(
+      builder: (context, citasCtrl, petCtrl, _) {
+        return Column(
+          children: [
+            _SearchBar(
+              hint: 'Buscar clínica, mascota o fecha…',
+              text: query,
+              onChanged: onSearchChanged,
+              onClear: () => onSearchChanged(''),
+            ),
+            const SizedBox(height: 10),
+            _Segment(
+              title: 'Estado',
+              chips: [
+                _ChipFilter(
+                  text: 'Pendiente',
+                  color: Colors.orange,
+                  active: citasCtrl.statusFilter == 'pending',
+                  onTap:
+                      () => citasCtrl.setStatusFilter(
+                        citasCtrl.statusFilter == 'pending' ? null : 'pending',
+                      ),
+                ),
+                _ChipFilter(
+                  text: 'Confirmada',
+                  color: Colors.green,
+                  active: citasCtrl.statusFilter == 'confirmed',
+                  onTap:
+                      () => citasCtrl.setStatusFilter(
+                        citasCtrl.statusFilter == 'confirmed'
+                            ? null
+                            : 'confirmed',
+                      ),
+                ),
+                _ChipFilter(
+                  text: 'Cancelada',
+                  color: Colors.red,
+                  active: citasCtrl.statusFilter == 'cancelled',
+                  onTap:
+                      () => citasCtrl.setStatusFilter(
+                        citasCtrl.statusFilter == 'cancelled'
+                            ? null
+                            : 'cancelled',
+                      ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            _Segment(
+              title: 'Mascota',
+              chips:
+                  petCtrl.pets.map((pet) {
+                    return _ChipFilter(
+                      text: pet.nombre,
+                      color: _kPrimary,
+                      active: citasCtrl.mascotaFilter == pet.idMascota,
+                      onTap:
+                          () => citasCtrl.setMascotaFilter(
+                            citasCtrl.mascotaFilter == pet.idMascota
+                                ? null
+                                : pet.idMascota,
+                          ),
+                    );
+                  }).toList(),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _SearchBar extends StatefulWidget {
   final String hint;
-  const _SearchBar({required this.hint});
+  final String text;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onClear;
+  const _SearchBar({
+    required this.hint,
+    required this.text,
+    required this.onChanged,
+    required this.onClear,
+  });
+
+  @override
+  State<_SearchBar> createState() => _SearchBarState();
+}
+
+class _SearchBarState extends State<_SearchBar> {
+  late final TextEditingController _ctl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctl = TextEditingController(text: widget.text);
+    _ctl.addListener(() => widget.onChanged(_ctl.text));
+  }
+
+  @override
+  void didUpdateWidget(covariant _SearchBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.text != widget.text && _ctl.text != widget.text) {
+      _ctl.text = widget.text;
+      _ctl.selection = TextSelection.fromPosition(
+        TextPosition(offset: _ctl.text.length),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -218,7 +717,13 @@ class _SearchBar extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: Colors.black12),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(.05), blurRadius: 12, offset: const Offset(0, 6))],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(.05),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
         ),
         child: Row(
           children: [
@@ -226,12 +731,27 @@ class _SearchBar extends StatelessWidget {
             const Icon(Icons.search, color: _kPrimaryDark, size: 20),
             const SizedBox(width: 8),
             Expanded(
-              child: Text(hint, style: const TextStyle(color: Colors.black38, fontWeight: FontWeight.w600)),
+              child: TextField(
+                controller: _ctl,
+                decoration: InputDecoration(
+                  hintText: widget.hint,
+                  border: InputBorder.none,
+                  isCollapsed: true,
+                ),
+                style: const TextStyle(
+                  color: Colors.black87,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
             IconButton(
-              onPressed: () => _toast(context, 'Borrar búsqueda (UI demo)'),
+              onPressed: () {
+                _ctl.clear();
+                widget.onClear();
+              },
               icon: const Icon(Icons.close_rounded, color: Colors.blueGrey),
               splashRadius: 18,
+              tooltip: 'Limpiar',
             ),
           ],
         ),
@@ -253,10 +773,12 @@ class _Segment extends StatelessWidget {
         Expanded(
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            child: Row(children: [
-              const SizedBox(width: 4),
-              ...chips.expand((w) => [w, const SizedBox(width: 8)]),
-            ]),
+            child: Row(
+              children: [
+                const SizedBox(width: 4),
+                ...chips.expand((w) => [w, const SizedBox(width: 8)]),
+              ],
+            ),
           ),
         ),
       ],
@@ -264,34 +786,49 @@ class _Segment extends StatelessWidget {
   }
 }
 
-class _ChipStatic extends StatelessWidget {
+class _ChipFilter extends StatelessWidget {
   final String text;
   final Color color;
-  const _ChipStatic({required this.text, required this.color});
+  final bool active;
+  final VoidCallback onTap;
+  const _ChipFilter({
+    required this.text,
+    required this.color,
+    required this.active,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       borderRadius: BorderRadius.circular(999),
-      onTap: () => _toast(context, '$text (UI demo)'),
+      onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: color.withOpacity(.12),
+          color: active ? color : color.withOpacity(.12),
           borderRadius: BorderRadius.circular(999),
           border: Border.all(color: color.withOpacity(.6)),
         ),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Icon(Icons.circle, size: 10, color: color),
-          const SizedBox(width: 6),
-          Text(text, style: TextStyle(fontWeight: FontWeight.w700, color: color.withOpacity(.95))),
-        ]),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.circle, size: 10, color: active ? Colors.white : color),
+            const SizedBox(width: 6),
+            Text(
+              text,
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                color: active ? Colors.white : color.withOpacity(.95),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-/// ====== DateStrip con table_calendar ======
 class _DateStrip extends StatefulWidget {
   const _DateStrip();
 
@@ -322,9 +859,8 @@ class _DateStripState extends State<_DateStrip> {
               _selectedDay = selectedDay;
               _focusedDay = focusedDay;
             });
-            _toast(context, 'Día seleccionado: ${selectedDay.day}');
           },
-          calendarStyle: CalendarStyle(
+          calendarStyle: const CalendarStyle(
             selectedDecoration: BoxDecoration(
               color: _kPrimary,
               shape: BoxShape.circle,
@@ -340,143 +876,65 @@ class _DateStripState extends State<_DateStrip> {
   }
 }
 
-/// ====== Grupo por día (título + lista) ======
-class _DayGroup extends StatelessWidget {
-  final String title;
-  final List<_ApptViewData> items;
-  const _DayGroup({required this.title, required this.items});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Padding(
-        padding: const EdgeInsets.only(left: 12, bottom: 6),
-        child: Text(title, style: _h2),
-      ),
-      ...items.map((a) => Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: _ApptCardStatic(data: a),
-          )),
-    ]);
-  }
-}
-
-/// ====== “Datos” planos para la tarjeta (sin modelo/clase) ======
-class _ApptViewData {
-  final String petInitial;
-  final String petAndType;   // "Luna • Consulta"
-  final String dateTimeStr;  // "02/01/2025 • 09:00–09:30"
-  final String clinic;       // "Vet Centro Norte"
-  final String status;       // "Pendiente"/"Confirmada"/"Cancelada"
-  final Color statusColor;
-
-  const _ApptViewData({
-    required this.petInitial,
-    required this.petAndType,
-    required this.dateTimeStr,
-    required this.clinic,
-    required this.status,
-    required this.statusColor,
-  });
-}
-
-/// ====== Tarjeta estática con riel (sin lógica) ======
-class _ApptCardStatic extends StatelessWidget {
-  final _ApptViewData data;
-  const _ApptCardStatic({required this.data});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // riel
-        Column(
-          children: [
-            Container(width: 10, height: 10, decoration: BoxDecoration(color: data.statusColor, shape: BoxShape.circle)),
-            Container(width: 2, height: 68, margin: const EdgeInsets.only(top: 4), color: data.statusColor.withOpacity(.25)),
-          ],
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Card(
-            elevation: 0,
-            color: Colors.white,
-            shape: _surface16,
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    backgroundColor: _kPrimary.withOpacity(.12),
-                    child: Text(data.petInitial, style: const TextStyle(color: _kPrimaryDark, fontWeight: FontWeight.w900)),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(data.petAndType, style: _h2),
-                      const SizedBox(height: 4),
-                      Text(data.dateTimeStr, style: _body),
-                      const SizedBox(height: 2),
-                      Text(data.clinic, style: _body.copyWith(color: Colors.black54)),
-                      const SizedBox(height: 8),
-                      Row(children: [
-                        _StatusChip(label: data.status, color: data.statusColor),
-                        const SizedBox(width: 3),
-                        TextButton.icon(
-                          onPressed: () => _toast(context, 'Indicaciones (UI demo)'),
-                          icon: const Icon(Icons.article_outlined, size: 18),
-                          label: const Text('Indicaciones'),
-                        ),
-                      ]),
-                    ]),
-                  ),
-                  PopupMenuButton<String>(
-                    onSelected: (v) => _toast(context, v == 'edit' ? 'Editar (UI demo)' : 'Eliminar (UI demo)'),
-                    itemBuilder: (ctx) => const [
-                      PopupMenuItem(value: 'edit', child: Text('Editar')),
-                      PopupMenuItem(value: 'delete', child: Text('Eliminar')),
-                    ],
-                    child: const Icon(Icons.more_horiz),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _StatusChip extends StatelessWidget {
-  final String label;
-  final Color color;
-  const _StatusChip({required this.label, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withOpacity(.12),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: color.withOpacity(.5)),
-      ),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(
-          label == 'Pendiente' ? Icons.hourglass_bottom :
-          label == 'Confirmada' ? Icons.check_circle :
-          Icons.cancel, size: 16, color: color,
-        ),
-        const SizedBox(width: 6),
-        Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w900)),
-      ]),
-    );
-  }
-}
-
-/// ====== Utilidad para toasts simples ======
 void _toast(BuildContext context, String msg) {
   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+}
+
+void _showNotas(BuildContext context, Cita cita) {
+  showDialog(
+    context: context,
+    builder:
+        (ctx) => AlertDialog(
+          title: const Text('Indicaciones'),
+          content: Text(
+            cita.notas?.isNotEmpty == true ? cita.notas! : 'Sin indicaciones',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cerrar'),
+            ),
+          ],
+        ),
+  );
+}
+
+void _handleMenu(BuildContext context, String action, Cita cita) async {
+  final citasCtrl = context.read<CitasController>();
+
+  switch (action) {
+    case 'reschedule':
+      // Elegir fecha
+      final pickedDate = await showDatePicker(
+        context: context,
+        initialDate: cita.horarioConfirmado ?? cita.fechaPreferida,
+        firstDate: DateTime.now().subtract(const Duration(days: 0)),
+        lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+      );
+      if (pickedDate == null) return;
+
+      final pickedTime = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.fromDateTime(
+          cita.horarioConfirmado ?? cita.fechaPreferida,
+        ),
+      );
+
+      DateTime newDateTime = DateTime(
+        pickedDate.year,
+        pickedDate.month,
+        pickedDate.day,
+        (pickedTime?.hour ?? 9),
+        (pickedTime?.minute ?? 0),
+      );
+
+      final ok = await citasCtrl.reagendar(cita.id, newDateTime);
+      _toast(context, ok ? 'Cita reagendada' : 'No se pudo reagendar');
+      break;
+
+    case 'cancel':
+      final ok = await citasCtrl.updateStatus(cita.id, 'cancelled');
+      _toast(context, ok ? 'Cita cancelada' : 'Error al cancelar');
+      break;
+  }
 }

@@ -29,7 +29,6 @@ class ApiService {
     final responseBody = json.decode(response.body);
 
     if (response.statusCode == 201) {
-      // 201 Created (Éxito en la creación)
       return {
         'success': true,
         'message': responseBody['message'] ?? 'Registro exitoso.',
@@ -37,7 +36,6 @@ class ApiService {
         'user': responseBody['user'],
       };
     } else {
-      // Manejar 400 Bad Request, 409 Conflict (Email ya existe), etc.
       return {
         'success': false,
         'message':
@@ -68,7 +66,6 @@ class ApiService {
         'user': responseBody['user'], // Datos del usuario
       };
     } else {
-      // Manejar 401 Unauthorized (Credenciales inválidas)
       return {
         'success': false,
         'message': responseBody['message'] ?? 'Credenciales inválidas.',
@@ -93,7 +90,7 @@ class ApiService {
       request.fields[key] = value?.toString() ?? '';
     });
 
-    // Adjuntar archivo usando fromPath para preservar filename y mimeType por extensión
+    // Adjuntar la foto
     final filename = p.basename(photo.path);
     final multipartFile = await http.MultipartFile.fromPath(
       'photo',
@@ -140,8 +137,6 @@ class ApiService {
       debugPrint(
         '🐾 [getPets] Body (primeros 200 chars): ${response.body.length > 200 ? response.body.substring(0, 200) : response.body}',
       );
-
-      // Si la respuesta no es 200, NO intentes decodificar como JSON exitoso
       if (response.statusCode != 200) {
         try {
           final errorBody = json.decode(response.body) as Map<String, dynamic>;
@@ -158,7 +153,6 @@ class ApiService {
         }
       }
 
-      // Solo decodifica si es 200
       try {
         final responseBody = json.decode(response.body) as Map<String, dynamic>;
         return {

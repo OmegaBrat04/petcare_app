@@ -13,7 +13,6 @@ class Usuarios {
     required this.nombreCompleto,
   });
 
-  // Método para crear un objeto User a partir del JSON de la API
   factory Usuarios.fromJson(Map<String, dynamic> json, String token) {
     final rawNombre = json['nombreCompleto'] ?? json['NombreCompleto'] ?? '';
     final rawId =

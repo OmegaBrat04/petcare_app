@@ -20,11 +20,17 @@ class CitasController extends ChangeNotifier {
 
   Cita? get proximaCita {
     final ahora = DateTime.now();
-    final futuras = _citas.where((c) =>
-      (c.estatus == Estatus.pending || c.estatus == Estatus.confirmed) &&
-      c.fechaPreferida.isAfter(ahora)
-    ).toList()..sort((a, b) => a.fechaPreferida.compareTo(b.fechaPreferida));
-    
+    final futuras =
+        _citas
+            .where(
+              (c) =>
+                  (c.estatus == Estatus.pending ||
+                      c.estatus == Estatus.confirmed) &&
+                  c.fechaPreferida.isAfter(ahora),
+            )
+            .toList()
+          ..sort((a, b) => a.fechaPreferida.compareTo(b.fechaPreferida));
+
     return futuras.isNotEmpty ? futuras.first : null;
   }
 
@@ -41,7 +47,7 @@ class CitasController extends ChangeNotifier {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
 
-  // ✅ Resolver nombre de mascota desde ID
+  // Resolver nombre de mascota desde ID
   String getMascotaNombre(int mascotaId, List<Mascota> mascotas) {
     try {
       return mascotas.firstWhere((m) => m.idMascota == mascotaId).nombre;
@@ -50,7 +56,7 @@ class CitasController extends ChangeNotifier {
     }
   }
 
-  // ✅ Resolver nombre de veterinaria desde ID
+  // Resolver nombre de veterinaria desde ID
   String getVeterinariaNombre(int veterinariaId, List<Clinica> veterinarias) {
     try {
       return veterinarias.firstWhere((v) => v.id == veterinariaId).name;
@@ -59,7 +65,7 @@ class CitasController extends ChangeNotifier {
     }
   }
 
-  // ✅ Inicial de mascota
+  // Inicial de mascota
   String getPetInitial(int mascotaId, List<Mascota> mascotas) {
     final nombre = getMascotaNombre(mascotaId, mascotas);
     return nombre.isNotEmpty ? nombre[0].toUpperCase() : '?';
@@ -78,7 +84,10 @@ class CitasController extends ChangeNotifier {
 
       if (result['success'] == true) {
         final list = (result['data'] as List<dynamic>? ?? []);
-        _citas = list.map((json) => Cita.fromJson(json as Map<String, dynamic>)).toList();
+        _citas =
+            list
+                .map((json) => Cita.fromJson(json as Map<String, dynamic>))
+                .toList();
         debugPrint('✅ [CitasController] ${_citas.length} citas cargadas');
       } else {
         _error = result['message']?.toString() ?? 'Error al cargar citas';
@@ -149,10 +158,7 @@ class CitasController extends ChangeNotifier {
 
   Future<bool> reagendar(int citaId, DateTime nuevaFechaHora) async {
     try {
-      final r = await ApiService.reagendarCita(
-        citaId,
-        nuevaFechaHora,
-      );
+      final r = await ApiService.reagendarCita(citaId, nuevaFechaHora);
       if (r['success'] == true) {
         await fetchCitas();
         return true;

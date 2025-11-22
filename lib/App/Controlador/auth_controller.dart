@@ -35,7 +35,7 @@ class AuthController extends ChangeNotifier {
           return 'Datos de usuario no recibidos desde el servidor.';
         }
 
-        // Comprobar explícita de existencia de Id en varias formas
+        // Verificar que userMap contiene alguna forma de IdUsuario
         final idKeys = ['IdUsuario', 'idUsuario', 'id', 'Id'];
         final hasId = idKeys.any(
           (k) => userMap.containsKey(k) && userMap[k] != null,
@@ -66,7 +66,7 @@ class AuthController extends ChangeNotifier {
     }
   }
 
-  // Envolver la llamada al servicio para poder agregar logging ahí también
+  // Helper que llama al ApiService.login con manejo de excepciones
   Future<Map<String, dynamic>?> _api_service_login_safe(
     String email,
     String password,
@@ -81,7 +81,7 @@ class AuthController extends ChangeNotifier {
     }
   }
 
-  // Helper que llama directamente al ApiService (evito shadowing de nombres)
+  // Helper que llama directamente al ApiService
   Future<Map<String, dynamic>?> _api_service_login({
     required String email,
     required String password,

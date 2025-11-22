@@ -25,10 +25,16 @@ class VeterinariaController extends ChangeNotifier {
 
       if (result['success'] == true) {
         final list = (result['data'] as List<dynamic>? ?? []);
-        _veterinarias = list.map((json) => Clinica.fromJson(json as Map<String, dynamic>)).toList();
-        debugPrint('✅ [VeterinariaController] ${_veterinarias.length} veterinarias cargadas');
+        _veterinarias =
+            list
+                .map((json) => Clinica.fromJson(json as Map<String, dynamic>))
+                .toList();
+        debugPrint(
+          '✅ [VeterinariaController] ${_veterinarias.length} veterinarias cargadas',
+        );
       } else {
-        _error = result['message']?.toString() ?? 'Error al cargar veterinarias';
+        _error =
+            result['message']?.toString() ?? 'Error al cargar veterinarias';
         debugPrint('❌ [VeterinariaController] $_error');
       }
     } catch (e, st) {
@@ -40,12 +46,12 @@ class VeterinariaController extends ChangeNotifier {
     }
   }
 
-  /// Distancia entre dos puntos en kilómetros (método estático)
+  /// Distancia entre dos puntos en kilómetros
   static double distanceKm(LatLng a, LatLng b) {
     return _dist.as(LengthUnit.Kilometer, a, b);
   }
 
-  /// Filtra y ordena clínicas por radio (km) desde center
+  /// Filtra y ordena clínicas por radio (km)
   static List<Clinica> byRadius({
     required List<Clinica> clinics,
     required LatLng center,
@@ -70,11 +76,7 @@ class VeterinariaController extends ChangeNotifier {
     required LatLng center,
     required double radiusKm,
   }) {
-    return byRadius(
-      clinics: _veterinarias,
-      center: center,
-      radiusKm: radiusKm,
-    );
+    return byRadius(clinics: _veterinarias, center: center, radiusKm: radiusKm);
   }
 }
 

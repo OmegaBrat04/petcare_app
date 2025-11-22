@@ -1,0 +1,411 @@
+/* Generales */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    background-color: #f0f2f5; 
+}
+
+.inicio-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* --- NAVBAR --- */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #fff;
+    padding: 8px 30px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    color: #333;
+    position: relative;
+    z-index: 10;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+/* Navbar Izquierda */
+.navbar-left {
+    display: flex;
+    align-items: center;
+    gap: 12px; 
+}
+
+.navbar-logo-icon {
+    height: 45px;
+    width: auto;
+}
+
+.brand-text {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    line-height: 1.1;
+}
+
+.brand-main {
+    font-size: 22px;
+    font-weight: 900;
+    color: #002D62;
+    font-family: 'Arial Black', Arial, sans-serif;
+}
+
+.brand-sub {
+    font-size: 19px;
+    font-weight: bold;
+    color: #33CCFF;
+    font-family: Arial, sans-serif;
+}
+
+/* Navbar Centro (Menú) */
+.navbar-menu {
+    display: flex;
+    gap: 30px;
+}
+
+.menu-item {
+    text-decoration: none;
+    color: #888;
+    font-weight: bold;
+    font-size: 15px;
+    padding: 5px 0;
+    position: relative;
+    transition: color 0.2s ease;
+}
+
+/* --- CAMBIO DE COLOR A AZUL --- */
+.menu-item.active {
+    color: #007bff; /* Azul en lugar de verde */
+}
+
+.menu-item:not(.active):hover {
+    color: #0056b3;
+}
+
+.menu-item.active::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -5px;
+    width: 100%;
+    height: 3px; /* Ligeramente más grueso para que se note más */
+    background-color: #007bff; /* Línea Azul */
+}
+
+/* Navbar Derecha */
+.navbar-right {
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    color: #888;
+    gap: 8px; 
+}
+
+.icon-phone {
+    font-size: 18px;
+    color: #007bff;
+}
+
+.phone-number {
+    font-size: 16px;
+    color: #333; 
+    font-weight: bold;
+    margin-right: 5px;
+}
+
+/* --- DASHBOARD CONTENT --- */
+.dashboard-content {
+    flex-grow: 1;
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+    position: relative;
+    overflow: hidden; 
+}
+
+.dashboard-row {
+    display: flex;
+    gap: 25px;
+    justify-content: center;
+    width: 100%;
+    max-width: 1250px;
+    margin: 0 auto;
+}
+
+/* Tarjetas (Cards) */
+.card {
+    background-color: #fff;
+    border-radius: 6px;
+    border: 1px solid #e0e0e0;
+    box-shadow: none;
+    padding: 20px;
+    flex: 1;
+    min-width: 280px; 
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+.card h3 {
+    margin-top: 0;
+    color: #333;
+    font-size: 17px;
+    font-weight: bold;
+    border-bottom: 1px solid #f0f0f0;
+    padding-bottom: 12px;
+    margin-bottom: 18px;
+}
+
+/* Citas de hoy */
+.citas-hoy {
+    flex: 1.5;
+}
+
+.citas-stats {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.stat-item {
+    text-align: center;
+    flex: 1;
+    padding: 0 8px;
+    border-right: 1px solid #f0f0f0;
+}
+
+.stat-item:last-child {
+    border-right: none;
+}
+
+.stat-number {
+    font-size: 26px;
+    font-weight: bold;
+    color: #333;
+    display: block;
+    margin-bottom: 3px;
+}
+
+.stat-number.primary {
+    color: #007bff;
+}
+
+.stat-label {
+    font-size: 13px;
+    color: #888;
+}
+
+.citas-summary {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    padding-top: 15px;
+}
+
+.summary-item {
+    text-align: center;
+}
+
+.summary-number {
+    font-size: 22px;
+    font-weight: bold;
+    display: block;
+    margin-bottom: 3px;
+}
+
+.summary-number.confirmed {
+    color: #4CAF50;
+}
+
+.summary-number.cancelled {
+    color: #dc3545;
+}
+
+/* Veterinarios y Clínicas Registradas */
+.veterinarios, .clinicas-registradas {
+    flex: 1;
+}
+
+.veterinarios-list, .clinicas-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.veterinario-item, .clinica-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px dotted #e0e0e0;
+}
+
+.veterinario-item:last-child, .clinica-item:last-child {
+    border-bottom: none;
+}
+
+.status {
+    font-size: 12px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    color: #fff;
+    font-weight: normal;
+}
+
+.status.available {
+    background-color: #5cb85c;
+}
+
+.status.occupied {
+    background-color: #d9534f;
+}
+
+/* Próximos Recordatorios */
+.proximos-recordatorios {
+    flex: 1.5;
+}
+
+.recordatorios-header {
+    display: flex;
+    justify-content: space-between;
+    color: #777;
+    font-size: 13px;
+    font-weight: bold;
+    padding: 0 5px 8px 5px;
+    border-bottom: 1px solid #f0f0f0;
+    margin-bottom: 8px;
+}
+
+.recordatorio-fecha-header {
+    flex-basis: 30%;
+    color: #555;
+    font-weight: bold;
+}
+
+.recordatorio-desc-header {
+    flex-basis: 70%;
+    color: #555;
+    font-weight: bold;
+}
+
+.recordatorios-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0px;
+}
+
+.recordatorio-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 5px; 
+    border-bottom: 1px dotted #e0e0e0;
+}
+
+.recordatorio-item:last-child {
+    border-bottom: none;
+}
+
+.recordatorio-date {
+    font-weight: normal;
+    color: #555;
+    flex-basis: 30%;
+    font-size: 14px;
+}
+
+.recordatorio-description {
+    color: #777;
+    flex-basis: 70%;
+    font-size: 14px;
+}
+
+/* Alertas */
+.alertas {
+    flex: 1;
+}
+
+.alertas-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0px;
+}
+
+.alerta-item {
+    padding: 10px 0;
+    border-bottom: 1px dotted #e0e0e0;
+    color: #333; 
+    font-size: 14px;
+}
+
+.alerta-item:last-child {
+    border-bottom: none;
+}
+
+/* Huellas de fondo */
+.paw-print {
+    position: absolute;
+    width: 100px; 
+    height: 100px;
+    background-image: url('./assets/paw-print.svg'); 
+    background-repeat: no-repeat;
+    background-size: contain;
+    opacity: 0.2;
+    transform: rotate(-15deg); 
+    z-index: 0;
+    pointer-events: none;
+}
+
+.paw-print.left-top { top: 50px; left: 50px; transform: rotate(30deg); }
+.paw-print.left-bottom { bottom: 50px; left: 100px; transform: rotate(-45deg); }
+.paw-print.right-top { top: 100px; right: 50px; transform: rotate(60deg); }
+
+.paw-print.right-bottom-card {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    width: 60px;
+    height: 60px;
+    opacity: 0.15;
+    transform: rotate(20deg);
+}
+
+@media (max-width: 1200px) {
+    .dashboard-row {
+        flex-wrap: wrap;
+    }
+    .card {
+        flex-basis: calc(50% - 12.5px);
+    }
+}
+
+@media (max-width: 768px) {
+    .navbar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    .navbar-menu {
+        flex-wrap: wrap;
+        margin-left: 0;
+        justify-content: center;
+        width: 100%;
+    }
+    .navbar-right {
+        width: 100%;
+        justify-content: center;
+        margin-top: 10px;
+    }
+    .dashboard-row {
+        flex-direction: column;
+    }
+    .card {
+        width: 100%;
+        flex-basis: auto;
+    }
+    .paw-print {
+        display: none; 
+    }
+}

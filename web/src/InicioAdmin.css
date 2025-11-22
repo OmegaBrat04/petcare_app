@@ -1,0 +1,229 @@
+/* Estilos Generales heredados y adaptados */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    background-color: #f0f2f5; 
+}
+
+.admin-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* --- NAVBAR ADMIN --- */
+.navbar-admin {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #fff;
+    padding: 12px 30px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    border-bottom: 1px solid #e0e0e0;
+    z-index: 10;
+}
+
+.navbar-left {
+    display: flex;
+    align-items: center;
+    gap: 12px; 
+}
+
+.brand-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.1;
+}
+
+.brand-main {
+    font-size: 22px;
+    font-weight: 900;
+    color: #002D62;
+    font-family: 'Arial Black', Arial, sans-serif;
+}
+
+.brand-sub {
+    font-size: 19px;
+    font-weight: bold;
+    color: #33CCFF;
+    font-family: Arial, sans-serif;
+}
+
+/* Etiqueta "Administrador" al lado del logo */
+.admin-badge {
+    background-color: #e3f2fd;
+    color: #007bff;
+    font-size: 11px;
+    font-weight: bold;
+    padding: 4px 8px;
+    border-radius: 12px;
+    margin-left: 10px;
+    text-transform: uppercase;
+    border: 1px solid #bbdefb;
+}
+
+.navbar-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.admin-user {
+    font-weight: bold;
+    color: #333;
+    font-size: 14px;
+}
+
+.logout-button {
+    text-decoration: none;
+    color: #dc3545; /* Rojo para salir */
+    font-size: 14px;
+    border: 1px solid #dc3545;
+    padding: 6px 12px;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.logout-button:hover {
+    background-color: #dc3545;
+    color: #fff;
+}
+
+/* --- CONTENIDO PRINCIPAL --- */
+.admin-content {
+    flex-grow: 1;
+    padding: 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.admin-header-section {
+    margin-bottom: 30px;
+}
+
+.admin-header-section h2 {
+    color: #002D62;
+    margin-bottom: 5px;
+}
+
+.admin-header-section p {
+    color: #666;
+    font-size: 15px;
+}
+
+/* Tarjeta de Admin */
+.admin-card {
+    background-color: #fff;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    padding: 25px;
+    position: relative;
+    overflow: hidden;
+}
+
+.admin-card h3 {
+    margin-top: 0;
+    font-size: 18px;
+    color: #333;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+}
+
+/* TABLA DE SOLICITUDES */
+.table-responsive {
+    overflow-x: auto;
+}
+
+.requests-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.requests-table th {
+    text-align: left;
+    padding: 12px 15px;
+    color: #666;
+    font-weight: bold;
+    border-bottom: 2px solid #f0f0f0;
+    background-color: #f9f9f9;
+}
+
+.requests-table td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #eee;
+    color: #333;
+    vertical-align: middle;
+}
+
+.requests-table tr:last-child td {
+    border-bottom: none;
+}
+
+.font-bold {
+    font-weight: bold;
+    color: #002D62;
+}
+
+/* Badges de estado */
+.status-badge {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.status-badge.pending {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+}
+
+/* Botones de acción */
+.btn-revisar {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: background-color 0.2s;
+}
+
+.btn-revisar:hover {
+    background-color: #0056b3;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 40px;
+    color: #999;
+    font-style: italic;
+}
+
+/* Huella decorativa */
+.paw-print {
+    position: absolute;
+    width: 100px; 
+    height: 100px;
+    background-image: url('./assets/paw-print.svg'); 
+    background-repeat: no-repeat;
+    background-size: contain;
+    opacity: 0.1;
+    transform: rotate(-15deg); 
+    z-index: 0;
+    pointer-events: none;
+}
+.right-bottom-card {
+    position: absolute;
+    bottom: -20px;
+    right: -20px;
+    width: 150px;
+    height: 150px;
+    opacity: 0.05;
+}

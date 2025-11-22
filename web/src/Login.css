@@ -1,0 +1,144 @@
+/* Importar los estilos del logo para mantener la consistencia */
+.brand-text {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    line-height: 1.1;
+}
+
+.brand-main {
+    font-size: 24px;
+    font-weight: 900;
+    color: #002D62;
+    /* Azul Oscuro */
+    font-family: 'Arial Black', Arial, sans-serif;
+}
+
+.brand-sub {
+    font-size: 21px;
+    font-weight: bold;
+    color: #33CCFF;
+    /* Azul Celeste */
+    font-family: Arial, sans-serif;
+}
+
+/* Contenedor principal */
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #f0f2f5;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Tarjeta de Login */
+.login-card {
+    background-color: #fff;
+    padding: 40px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 400px;
+    z-index: 10;
+    /* Asegura que esté sobre las huellas */
+}
+
+.login-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.login-logo-icon {
+    height: 60px;
+    /* Un poco más grande que en el navbar */
+    margin-bottom: 10px;
+}
+
+.login-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #555;
+    margin-top: 10px;
+}
+
+/* Formulario e Inputs */
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 14px;
+    font-weight: bold;
+    color: #333;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 10px 15px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 16px;
+    transition: border-color 0.2s;
+}
+
+.input-group input:focus {
+    border-color: #007bff;
+    outline: none;
+    box-shadow: 0 0 0 1px #007bff;
+}
+
+.login-button {
+    background-color: #4CAF50;
+    /* Verde, como en el dashboard */
+    color: white;
+    padding: 12px;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.login-button:hover {
+    background-color: #45a049;
+}
+
+.forgot-password {
+    text-align: center;
+    font-size: 13px;
+    color: #007bff;
+    text-decoration: none;
+}
+
+/* Estilos de Huellas (basados en Inicio.css) */
+.paw-print {
+    position: absolute;
+    width: 120px;
+    height: 120px;
+    background-image: url('./assets/paw-print.svg');
+    /* Asegúrate que la ruta sea correcta */
+    background-repeat: no-repeat;
+    background-size: contain;
+    opacity: 0.15;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.paw-print.login-top-left {
+    top: 30px;
+    left: 50px;
+    transform: rotate(30deg);
+}
+
+.paw-print.login-bottom-right {
+    bottom: 30px;
+    right: 50px;
+    transform: rotate(-45deg);
+}

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:petcare_app/App/Controlador/auth_controller.dart';
 import 'package:petcare_app/App/Controlador/mascota_controller.dart';
 import 'package:petcare_app/App/Vista/formularioMascota.dart';
@@ -51,7 +52,7 @@ class PetCareApp extends StatelessWidget {
         '/login': (_) => const LoginPawView(),
         '/menu': (_) => HomeShell(),
         '/mascotas': (_) => const MascotasListScreen(),
-        
+        '/formularioMascota': (_) => const FormularioMascota(),
       },
     );
   }
@@ -87,8 +88,6 @@ class _SplashScreenState extends State<SplashScreen>
     duration: const Duration(milliseconds: 2400),
   )..repeat();
 
-  Timer? _timer;
-
   @override
   void initState() {
     super.initState();
@@ -101,12 +100,18 @@ class _SplashScreenState extends State<SplashScreen>
         systemNavigationBarIconBrightness: Brightness.light,
       ),
     );
-    _timer = Timer(const Duration(seconds: 5), _goLogin);
+    _boot();
   }
 
-  void _goLogin() {
+  Future<void> _boot() async {
+    await Future.delayed(const Duration(milliseconds: 1500));
+    final auth = context.read<AuthController>();
+    await auth.restoreSession();
     if (!mounted) return;
-    Navigator.of(context).pushReplacementNamed('/login');
+    Navigator.pushReplacementNamed(
+      context,
+      auth.isAuthenticated ? '/menu' : '/login',
+    );
   }
 
   @override
@@ -114,7 +119,7 @@ class _SplashScreenState extends State<SplashScreen>
     _introCtrl.dispose();
     _rotateCtrl.dispose();
     _shimmerCtrl.dispose();
-    _timer?.cancel();
+    //_timer?.cancel();
     super.dispose();
   }
 

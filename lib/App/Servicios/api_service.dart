@@ -59,6 +59,12 @@ class ApiService {
     final responseBody = json.decode(response.body);
 
     if (response.statusCode == 200) {
+      final tel =
+          responseBody['user']?['telefono'] ??
+          responseBody['user']?['Telefono'];
+      if (tel != null) {
+        await _storage.write(key: 'user_phone', value: tel.toString());
+      }
       // 200 OK
       return {
         'success': true,
@@ -174,6 +180,39 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> updatePet({
+    required int idMascota,
+    required Map<String, dynamic> petData,
+    File? photo,
+    required String token,
+  }) async {
+    final url = Uri.parse('$_baseUrl/mascotas/$idMascota');
+    final req = http.MultipartRequest('PATCH', url);
+    req.headers['Authorization'] = 'Bearer $token';
+
+    petData.forEach((k, v) {
+      if (v != null) req.fields[k] = v.toString();
+    });
+
+    if (photo != null) {
+      final filename = p.basename(photo.path);
+      req.files.add(
+        await http.MultipartFile.fromPath(
+          'photo',
+          photo.path,
+          filename: filename,
+        ),
+      );
+    }
+
+    final streamed = await req.send();
+    final body = await streamed.stream.bytesToString();
+    final data = jsonDecode(body);
+    return data is Map<String, dynamic>
+        ? data
+        : {'success': false, 'message': 'Respuesta inválida'};
+  }
+
   // ------------------------------ OBTENER CLINICAS ------------------------------
   static Future<List<Clinica>> getClinicas() async {
     final url = Uri.parse('$_baseUrl/veterinarias');
@@ -236,12 +275,18 @@ class ApiService {
     if (!headers.containsKey('Authorization')) {
       return {'success': false, 'message': 'Sesión expirada. Inicie sesión.'};
     }
+    final storedTel = await _storage.read(key: 'user_phone');
+    final efectivoTel =
+        (telefono ?? '').trim().isNotEmpty
+            ? (telefono ?? '').trim()
+            : (storedTel ?? '').trim();
+
     final body = {
       'veterinaria_id': veterinariaId,
       'mascota_nombre': mascotaNombre,
       if (servicioNombre != null && servicioNombre.isNotEmpty)
         'servicio_nombre': servicioNombre,
-      'telefono_contacto': telefono ?? '',
+      if (efectivoTel.isNotEmpty) 'telefono_contacto': efectivoTel,
       'fecha_preferida':
           '${fechaPreferida.year.toString().padLeft(4, '0')}-${fechaPreferida.month.toString().padLeft(2, '0')}-${fechaPreferida.day.toString().padLeft(2, '0')}',
       'notas': notas ?? '',
@@ -397,5 +442,142 @@ class ApiService {
     } catch (e) {
       return {'success': false, 'message': 'Error de conexión: $e'};
     }
+  }
+
+  static Future<Map<String, dynamic>> reagendarCitaRaw(
+    int citaId, {
+    required DateTime fechaPreferida,
+    String? horaPreferida,
+  }) async {
+    final token = await _storage.read(key: 'jwt_token');
+    final uri = Uri.parse('$_baseUrl/citas/$citaId/reagendar');
+    final body = {
+      'fecha_preferida':
+          '${fechaPreferida.year}-${fechaPreferida.month.toString().padLeft(2, '0')}-${fechaPreferida.day.toString().padLeft(2, '0')}',
+      if (horaPreferida != null) 'hora_preferida': horaPreferida,
+    };
+
+    http.Response resp;
+    try {
+      resp = await http.patch(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode(body),
+      );
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Network error',
+        'error': e.toString(),
+      };
+    }
+
+    if (!resp.headers['content-type'].toString().toLowerCase().contains(
+      'application/json',
+    )) {
+      return {
+        'success': false,
+        'message': 'Respuesta no JSON',
+        'status': resp.statusCode,
+        'raw': resp.body.substring(
+          0,
+          resp.body.length > 200 ? 200 : resp.body.length,
+        ),
+      };
+    }
+
+    try {
+      return jsonDecode(resp.body) as Map<String, dynamic>;
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'JSON inválido',
+        'status': resp.statusCode,
+        'error': e.toString(),
+      };
+    }
+  }
+
+  //------------------------------ Eventos Salud--------------------------------------------------
+  Future<Map<String, dynamic>> crearEventoSalud({
+    required int mascotaId,
+    required String tipo,
+    required DateTime fecha,
+    required String producto,
+    String? lote,
+    String? veterinaria,
+    int? regularidadMeses,
+    String? notas,
+  }) async {
+    final token = await _storage.read(key: 'jwt_token');
+    final url = Uri.parse('$_baseUrl/mascotas/$mascotaId/salud');
+    final body = {
+      'tipo': tipo,
+      'fechaAplicacion': fecha.toIso8601String().split('T').first,
+      'producto': producto,
+      if (lote != null && lote.isNotEmpty) 'lote': lote,
+      if (veterinaria != null && veterinaria.isNotEmpty)
+        'veterinaria': veterinaria,
+      if (regularidadMeses != null)
+        'regularidadMeses': regularidadMeses.toString(),
+      if (notas != null && notas.isNotEmpty) 'notas': notas,
+    };
+    final resp = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode(body),
+    );
+    return jsonDecode(resp.body);
+  }
+
+  Future<Map<String, dynamic>> listarEventosSalud(int mascotaId) async {
+    final token = await _storage.read(key: 'jwt_token');
+    final url = Uri.parse('$_baseUrl/mascotas/$mascotaId/salud');
+    final resp = await http.get(
+      url,
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    return jsonDecode(resp.body);
+  }
+
+  Future<Map<String, dynamic>> eliminarEventoSalud(int id) async {
+    final token = await _storage.read(key: 'jwt_token');
+    final url = Uri.parse('$_baseUrl/salud/$id');
+    final resp = await http.delete(
+      url,
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    return jsonDecode(resp.body);
+  }
+
+  static Future<Map<String, dynamic>> actualizarTelefono(
+    String telefono,
+  ) async {
+    final token = await _storage.read(key: 'jwt_token');
+    final resp = await http.patch(
+      Uri.parse('$_baseUrl/usuario/telefono'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+      },
+      body: jsonEncode({'telefono': telefono}),
+    );
+    return jsonDecode(resp.body);
+  }
+
+  static Future<void> writeSecure(String key, String value) async {
+    await _storage.write(key: key, value: value);
+  }
+
+  static Future<String?> readSecure(String key) async {
+    return _storage.read(key: key);
   }
 }

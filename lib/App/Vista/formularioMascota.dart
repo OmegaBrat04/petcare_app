@@ -3,11 +3,13 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart';
+import 'package:petcare_app/App/Modelo/Mascotas.dart';
 import 'package:provider/provider.dart';
 import 'package:petcare_app/App/Controlador/mascota_controller.dart';
 
 class FormularioMascota extends StatefulWidget {
-  const FormularioMascota({super.key});
+  final Mascota? mascota;
+  const FormularioMascota({super.key, this.mascota});
 
   @override
   State<FormularioMascota> createState() => _FormularioMascotaState();
@@ -26,6 +28,7 @@ class _FormularioMascotaState extends State<FormularioMascota> {
   File? _image;
   final ImagePicker _picker = ImagePicker();
   bool loading = false;
+  bool get isEdit => widget.mascota != null;
   Future<void> _pickImage() async {
     final XFile? pickedFile = await _picker.pickImage(
       source: ImageSource.gallery,
@@ -70,8 +73,23 @@ class _FormularioMascotaState extends State<FormularioMascota> {
   @override
   void initState() {
     super.initState();
-    fechaNacimientoCtrl.text = '';
-    edadCtrl.text = '';
+    if (isEdit) {
+      final m = widget.mascota!;
+      nombreCtrl.text = m.nombre;
+      razaCtrl.text = m.raza ?? '';
+      pesoCtrl.text = m.peso?.toString() ?? '';
+      especie = m.especie ?? 'Perro';
+      sexo = m.sexo ?? 'M';
+      fechaNacimientoSelected = m.fechaNacimiento;
+      if (m.fechaNacimiento != null) {
+        fechaNacimientoCtrl.text =
+            m.fechaNacimiento!.toIso8601String().split('T').first;
+      }
+      edadCtrl.text = (m.edad ?? '').toString();
+    } else {
+      fechaNacimientoCtrl.text = '';
+      edadCtrl.text = '';
+    }
   }
 
   @override
@@ -87,47 +105,30 @@ class _FormularioMascotaState extends State<FormularioMascota> {
   Future<void> _onSavePet() async {
     HapticFeedback.lightImpact();
     if (!formKey.currentState!.validate()) return;
-    if (_image == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Por favor, selecciona una foto para la mascota.'),
-        ),
-      );
+
+    if (!isEdit && _image == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Selecciona una foto.')));
       return;
     }
 
-    // Asegurar edad: si no hay edad en el controlador pero hay fecha, calcularla
     int? edadInt;
     final edadText = edadCtrl.text.trim();
-    if (edadText.isNotEmpty) {
-      edadInt = int.tryParse(edadText);
-    } else if (fechaNacimientoSelected != null) {
-      edadInt = _calculateAgeYears(fechaNacimientoSelected!);
-      edadCtrl.text = edadInt.toString();
-    }
-
-    debugPrint(
-      'DEBUG antes de enviar -> edadCtrl: "${edadCtrl.text}", edadInt: $edadInt, fechaNacimientoSelected: $fechaNacimientoSelected',
-    );
+    if (edadText.isNotEmpty) edadInt = int.tryParse(edadText);
 
     if (edadInt == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'La edad debe ser un número entero. Selecciona fecha de nacimiento o escribe la edad.',
-          ),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Edad inválida.')));
       return;
     }
-
     final petData = {
       'nombre': nombreCtrl.text.trim(),
       'especie': especie,
-      'raza': razaCtrl.text.trim().isEmpty ? '' : razaCtrl.text.trim(),
+      'raza': razaCtrl.text.trim(),
       'sexo': sexo,
-      'peso': pesoCtrl.text.trim().isEmpty ? '' : pesoCtrl.text.trim(),
-      // Fecha en formato YYYY-MM-DD (lo que tu backend espera)
+      'peso': pesoCtrl.text.trim(),
       'fechaNacimiento':
           fechaNacimientoSelected != null
               ? fechaNacimientoSelected!.toIso8601String().split('T').first
@@ -135,25 +136,28 @@ class _FormularioMascotaState extends State<FormularioMascota> {
       'edad': edadInt.toString(),
     };
 
-    debugPrint('DEBUG petData a enviar: $petData');
-
-    final mascotaController = Provider.of<PetController>(
-      context,
-      listen: false,
-    );
+    final mascotaController = context.read<PetController>();
     setState(() => loading = true);
-
-    final errorMessage = await mascotaController.addPet(
-      photo: _image!,
-      petData: petData,
-    );
-
+    String? errorMessage;
+    if (isEdit) {
+      errorMessage = await mascotaController.updatePet(
+        original: widget.mascota!,
+        petData: petData,
+        photo: _image, // solo si se cambió
+      );
+    } else {
+      errorMessage = await mascotaController.addPet(
+        photo: _image!,
+        petData: petData,
+      );
+    }
     setState(() => loading = false);
-
     if (errorMessage == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Mascota guardada correctamente')),
+          SnackBar(
+            content: Text(isEdit ? 'Mascota actualizada' : 'Mascota creada'),
+          ),
         );
         Navigator.of(context).pop(true);
       }
@@ -397,7 +401,14 @@ class _FormularioMascotaState extends State<FormularioMascota> {
                         const SizedBox(height: 16),
                         TextFormField(
                           controller: pesoCtrl,
-                          decoration: const InputDecoration(labelText: 'Peso'),
+                          decoration: const InputDecoration(
+                            labelText: 'Peso',
+                            suffixText: 'kg',
+                            suffixStyle: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                           keyboardType: TextInputType.number,
                         ),
                         const SizedBox(height: 16),

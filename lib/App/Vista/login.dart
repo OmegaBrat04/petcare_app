@@ -5,8 +5,6 @@ import 'package:petcare_app/App/Vista/signup.dart';
 import 'package:petcare_app/App/Controlador/auth_controller.dart';
 import 'package:provider/provider.dart';
 
-
-
 class LoginPawView extends StatefulWidget {
   const LoginPawView({super.key});
 
@@ -53,6 +51,7 @@ class _LoginPawViewState extends State<LoginPawView>
     final errorMessage = await authController.login(
       _emailCtrl.text,
       _passCtrl.text,
+      rememberMe: _remember,
     );
     setState(() => _loading = false);
     if (mounted) {

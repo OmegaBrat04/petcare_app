@@ -4,6 +4,7 @@ class Usuarios {
   final String role;
   final String token;
   final String nombreCompleto;
+  final String? telefono;
 
   Usuarios({
     required this.id,
@@ -11,6 +12,7 @@ class Usuarios {
     required this.role,
     required this.token,
     required this.nombreCompleto,
+    this.telefono,
   });
 
   factory Usuarios.fromJson(Map<String, dynamic> json, String token) {
@@ -28,12 +30,14 @@ class Usuarios {
 
     final rawEmail = json['email'] ?? json['Email'] ?? '';
     final rawRole = json['rol'] ?? json['Rol'] ?? '';
+    final rawTel = json['telefono'] ?? json['Telefono'] ?? null;
     return Usuarios(
       id: idValue,
       email: rawEmail.toString(),
       role: rawRole.toString(),
       token: token,
       nombreCompleto: rawNombre.toString(),
+      telefono: rawTel == null ? null : rawTel.toString(),
     );
   }
 }

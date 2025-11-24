@@ -9,13 +9,13 @@ class Cita {
   final int veterinariaId;
   final int? servicioId;
   final String? telefonoContacto;
-  final DateTime fechaPreferida; 
+  final DateTime fechaPreferida;
+  final String? horaPreferida;
   final DateTime? horarioConfirmado;
   final Estatus estatus;
   final String? notas;
   final DateTime creadoEn;
-  Cita
-({
+  Cita({
     required this.id,
     required this.mascotaId,
     required this.usuarioId,
@@ -23,6 +23,7 @@ class Cita {
     this.servicioId,
     this.telefonoContacto,
     required this.fechaPreferida,
+    this.horaPreferida,
     this.horarioConfirmado,
     this.estatus = Estatus.pending,
     this.notas,
@@ -43,16 +44,20 @@ class Cita {
       }
     }
 
-    return Cita
-  (
+    return Cita(
       id: (m['id'] as num).toInt(),
       mascotaId: (m['mascota_id'] as num).toInt(),
       usuarioId: (m['usuario_id'] as num).toInt(),
       veterinariaId: (m['veterinaria_id'] as num).toInt(),
-      servicioId: m['servicio_id'] != null ? (m['servicio_id'] as num).toInt() : null,
+      servicioId:
+          m['servicio_id'] != null ? (m['servicio_id'] as num).toInt() : null,
       telefonoContacto: m['telefono_contacto'] as String?,
       fechaPreferida: DateTime.parse(m['fecha_preferida'] as String),
-      horarioConfirmado: m['horario_confirmado'] != null ? DateTime.parse(m['horario_confirmado'] as String) : null,
+      horaPreferida: m['hora_preferida'] as String?,
+      horarioConfirmado:
+          m['horario_confirmado'] != null
+              ? DateTime.parse(m['horario_confirmado'] as String)
+              : null,
       estatus: parseStatus(m['status'] as String),
       notas: m['notas'] as String?,
       creadoEn: DateTime.parse(m['created_at'] as String),
@@ -62,18 +67,19 @@ class Cita {
   factory Cita.fromJson(Map<String, dynamic> json) => Cita.fromMap(json);
 
   Map<String, dynamic> toMap() => {
-        'id': id,
-        'mascota_id': mascotaId,
-        'usuario_id': usuarioId,
-        'veterinaria_id': veterinariaId,
-        'servicio_id': servicioId,
-        'telefono_contacto': telefonoContacto,
-        'fecha_preferida': fechaPreferida.toIso8601String(),
-        'horario_confirmado': horarioConfirmado?.toIso8601String(),
-        'status': estatus.name,
-        'notas': notas,
-        'created_at': creadoEn.toIso8601String(),
-      };
+    'id': id,
+    'mascota_id': mascotaId,
+    'usuario_id': usuarioId,
+    'veterinaria_id': veterinariaId,
+    'servicio_id': servicioId,
+    'telefono_contacto': telefonoContacto,
+    'fecha_preferida': fechaPreferida.toIso8601String(),
+    'hora_preferida': horaPreferida,
+    'horario_confirmado': horarioConfirmado?.toIso8601String(),
+    'status': estatus.name,
+    'notas': notas,
+    'created_at': creadoEn.toIso8601String(),
+  };
 
   String get statusLabel {
     switch (estatus) {
@@ -86,6 +92,13 @@ class Cita {
       default:
         return 'Pendiente';
     }
+  }
+
+  String get horaMostrada {
+    if (horarioConfirmado != null) {
+      return '${horarioConfirmado!.hour.toString().padLeft(2, '0')}:${horarioConfirmado!.minute.toString().padLeft(2, '0')}';
+    }
+    return horaPreferida ?? '--:--';
   }
 
   Color get statusColor {

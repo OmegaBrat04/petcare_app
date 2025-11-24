@@ -6,6 +6,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:petcare_app/App/Controlador/auth_controller.dart';
 import 'package:provider/provider.dart';
 import 'package:petcare_app/App/Controlador/mascota_controller.dart';
 import 'package:petcare_app/App/Modelo/Clinica.dart';
@@ -490,6 +491,8 @@ class _GeolocalizadorPageState extends State<GeolocalizadorPage> {
     String? servicioSeleccionado;
 
     final servicios = (clinic.servicios ?? []).map((s) => s.name).toList();
+    final auth = Provider.of<AuthController>(context, listen: false);
+    telefonoController.text = (auth.currentUser?.telefono ?? '').trim();
 
     showModalBottomSheet(
       context: context,
@@ -513,12 +516,13 @@ class _GeolocalizadorPageState extends State<GeolocalizadorPage> {
                 _toast('Sesión expirada. Inicie sesión.');
                 return;
               }
+              final telForm = telefonoController.text.trim();
               final r = await ApiService.crearCita(
                 veterinariaId: clinic.id,
                 mascotaNombre: mascotaController.text.trim(),
                 servicioNombre: servicioSeleccionado,
                 fechaPreferida: fechaSeleccionada!,
-                telefono: telefonoController.text.trim(),
+                telefono: telForm,
                 notas: motivoController.text.trim(),
               );
               if (r['success'] == true) {

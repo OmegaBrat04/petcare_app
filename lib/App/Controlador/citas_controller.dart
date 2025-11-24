@@ -156,16 +156,20 @@ class CitasController extends ChangeNotifier {
     }
   }
 
-  Future<bool> reagendar(int citaId, DateTime nuevaFechaHora) async {
+  Future<bool> reagendarPreferencia(
+    int citaId,
+    DateTime fechaHoraPreferida,
+  ) async {
     try {
-      final r = await ApiService.reagendarCita(citaId, nuevaFechaHora);
-      if (r['success'] == true) {
-        await fetchCitas();
-        return true;
-      }
-      _error = r['message']?.toString() ?? 'Error al reagendar';
-      notifyListeners();
-      return false;
+      final okMap = await ApiService.reagendarCitaRaw(
+        citaId,
+        fechaPreferida: fechaHoraPreferida,
+        horaPreferida:
+            '${fechaHoraPreferida.hour.toString().padLeft(2, '0')}:${fechaHoraPreferida.minute.toString().padLeft(2, '0')}',
+      );
+      final ok = okMap['success'] == true;
+      if (ok) await fetchCitas();
+      return ok;
     } catch (e) {
       _error = e.toString();
       notifyListeners();

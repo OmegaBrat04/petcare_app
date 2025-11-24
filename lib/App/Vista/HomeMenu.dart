@@ -2,10 +2,14 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:petcare_app/App/Controlador/auth_controller.dart';
+import 'package:petcare_app/App/Controlador/citas_controller.dart';
+import 'package:petcare_app/App/Controlador/mascota_controller.dart';
+import 'package:petcare_app/App/Controlador/veterinaria_controller.dart';
+import 'package:petcare_app/App/Modelo/EstatusCita.dart';
+import 'package:petcare_app/App/Servicios/ProximaCitaCard.dart';
 import 'package:petcare_app/App/Vista/citas.dart';
 import 'package:petcare_app/App/Vista/geolocalizador.dart';
 import 'package:petcare_app/App/Vista/InfoMascota.dart';
-import 'package:petcare_app/App/Vista/login.dart';
 import 'package:provider/provider.dart';
 
 /*WidgetsFlutterBinding.ensureInitialized();
@@ -58,6 +62,73 @@ Future<void> _showAccountMenu(BuildContext context) async {
               ),
             ),
             const SizedBox(height: 12),
+            // ...existing code inside _showAccountMenu (antes del ListTile de cerrar sesión)...
+            ListTile(
+              leading: const Icon(Icons.phone, color: _kPrimaryDark),
+              title: const Text('Actualizar teléfono'),
+              subtitle: Consumer<AuthController>(
+                builder:
+                    (_, auth, __) => Text(
+                      auth.currentUser?.telefono == null ||
+                              auth.currentUser!.telefono!.isEmpty
+                          ? 'No registrado'
+                          : auth.currentUser!.telefono!,
+                      style: const TextStyle(fontSize: 12),
+                    ),
+              ),
+              onTap: () async {
+                final auth = context.read<AuthController>();
+                final controller = TextEditingController(
+                  text: auth.currentUser?.telefono ?? '',
+                );
+                final ok = await showDialog<bool>(
+                  context: context,
+                  builder:
+                      (dCtx) => AlertDialog(
+                        title: const Text('Teléfono de contacto'),
+                        content: TextField(
+                          controller: controller,
+                          keyboardType: TextInputType.phone,
+                          decoration: const InputDecoration(
+                            hintText: 'Ej: 999123456',
+                          ),
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(dCtx, false),
+                            child: const Text('Cancelar'),
+                          ),
+                          ElevatedButton(
+                            onPressed: () => Navigator.pop(dCtx, true),
+                            child: const Text('Guardar'),
+                          ),
+                        ],
+                      ),
+                );
+                if (ok == true) {
+                  final tel = controller.text.trim();
+                  if (tel.length < 6) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Teléfono inválido')),
+                    );
+                    return;
+                  }
+                  final updated = await auth.actualizarTelefono(tel);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        updated
+                            ? 'Teléfono actualizado'
+                            : 'No se pudo actualizar',
+                      ),
+                    ),
+                  );
+                }
+              },
+            ),
             ListTile(
               leading: const Icon(Icons.logout, color: _kPrimaryDark),
               title: const Text('Cerrar sesión'),
@@ -73,7 +144,6 @@ Future<void> _showAccountMenu(BuildContext context) async {
                 Navigator.of(context).pushReplacementNamed('/login');
               },
             ),
-            
           ],
         ),
       );
@@ -107,6 +177,14 @@ class _HomeShellState extends State<HomeShell> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final petCtrl = context.read<PetController>();
+      await petCtrl.fetchPets();
+      final citasCtrl = context.read<CitasController>();
+      await citasCtrl.fetchCitas();
+      final vetCtrl = context.read<VeterinariaController>();
+      await vetCtrl.fetchVeterinarias();
+    });
   }
 
   @override
@@ -190,30 +268,72 @@ class _HomeShellState extends State<HomeShell> {
                             _InfoCard(
                               title: 'Próxima Cita',
                               icon: Icons.event,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'No tienes citas programadas',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.white.withOpacity(0.9),
-                                    ),
-                                  ),
-                                  TextButton(
-                                    onPressed:
-                                        () => Navigator.of(context).push(
-                                          MaterialPageRoute(
-                                            builder:
-                                                (_) =>
-                                                    const CitasPage(),
+                              child: Consumer3<
+                                CitasController,
+                                PetController,
+                                VeterinariaController
+                              >(
+                                builder: (
+                                  context,
+                                  citasCtrl,
+                                  petCtrl,
+                                  vetCtrl,
+                                  _,
+                                ) {
+                                  final mascotaList = petCtrl.pets;
+                                  final vets = vetCtrl.veterinarias;
+                                  final ahora = DateTime.now();
+                                  final futuras =
+                                      citasCtrl.citas
+                                          .where(
+                                            (c) =>
+                                                (c.estatus == Estatus.pending ||
+                                                    c.estatus ==
+                                                        Estatus.confirmed) &&
+                                                c.fechaPreferida.isAfter(ahora),
+                                          )
+                                          .toList()
+                                        ..sort(
+                                          (a, b) => a.fechaPreferida.compareTo(
+                                            b.fechaPreferida,
+                                          ),
+                                        );
+                                  if (futuras.isEmpty) {
+                                    return Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'No tienes citas programadas',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            color: Colors.white.withOpacity(
+                                              0.9,
+                                            ),
                                           ),
                                         ),
-                                    child: const Text('Historial de Citas', style: TextStyle(
-                                      color: Colors.white
-                                    )),
-                                  ),
-                                ],
+                                        const SizedBox(height: 8),
+                                        _RectActionButton(
+                                          label: 'Historial de Citas',
+                                          icon: Icons.history,
+                                          onTap:
+                                              () => Navigator.of(context).push(
+                                                MaterialPageRoute(
+                                                  builder:
+                                                      (_) => const CitasPage(),
+                                                ),
+                                              ),
+                                        ),
+                                      ],
+                                    );
+                                  }
+                                  final proxima = futuras.first;
+                                  return ProximaCitaCard(
+                                    cita: proxima,
+                                    mascotas: mascotaList.cast(),
+                                    veterinarias: vets,
+                                  );
+                                },
                               ),
                             ),
                             const SizedBox(height: 16),
@@ -234,8 +354,11 @@ class _HomeShellState extends State<HomeShell> {
                                   _BulletPoint('Agendar citas fácilmente'),
                                   _BulletPoint('Mantener su historial médico'),
                                   _BulletPoint('Recordatorios de vacunas'),
-                                  TextButton(
-                                    onPressed:
+                                  const SizedBox(height: 8),
+                                  _RectActionButton(
+                                    label: 'Ver mis mascotas',
+                                    icon: Icons.pets,
+                                    onTap:
                                         () => Navigator.of(context).push(
                                           MaterialPageRoute(
                                             builder:
@@ -243,9 +366,6 @@ class _HomeShellState extends State<HomeShell> {
                                                     const MascotasListScreen(),
                                           ),
                                         ),
-                                    child: const Text('Ver mis mascotas', style: TextStyle(
-                                      color: Colors.white
-                                    )),
                                   ),
                                 ],
                               ),
@@ -264,8 +384,11 @@ class _HomeShellState extends State<HomeShell> {
                                       color: Colors.white.withOpacity(0.9),
                                     ),
                                   ),
-                                  TextButton(
-                                    onPressed:
+                                  const SizedBox(height: 8),
+                                  _RectActionButton(
+                                    label: 'Buscar veterinarias',
+                                    icon: Icons.map,
+                                    onTap:
                                         () => Navigator.of(context).push(
                                           MaterialPageRoute(
                                             builder:
@@ -273,9 +396,6 @@ class _HomeShellState extends State<HomeShell> {
                                                     const GeolocalizadorPage(),
                                           ),
                                         ),
-                                    child: const Text('Buscar veterinarias', style: TextStyle(
-                                      color: Colors.white
-                                    )),
                                   ),
                                 ],
                               ),
@@ -507,77 +627,51 @@ class _GlassHeader extends StatelessWidget {
   }
 }
 
-class _SearchBarWhite extends StatelessWidget {
-  final TextEditingController controller;
-  final String hintText;
-  final ValueChanged<String>? onChanged;
-  final ValueChanged<String>? onSubmitted;
-  final VoidCallback? onClear;
-
-  const _SearchBarWhite({
-    required this.controller,
-    required this.hintText,
-    this.onChanged,
-    this.onSubmitted,
-    this.onClear,
+class _RectActionButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+  const _RectActionButton({
+    required this.label,
+    required this.icon,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(top: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.black12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          const SizedBox(width: 10),
-          const Icon(Icons.search, color: _kPrimaryDark, size: 22),
-          const SizedBox(width: 6),
-          Expanded(
-            child: TextField(
-              controller: controller,
-              onChanged: onChanged,
-              onSubmitted: onSubmitted,
-              style: const TextStyle(
-                color: Colors.black87,
-                fontWeight: FontWeight.w600,
-              ),
-              cursorColor: Colors.black87,
-              decoration: const InputDecoration(
-                hintText: 'Buscar mascotas, citas, veterinarias…',
-                hintStyle: TextStyle(color: Colors.black38),
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(vertical: 14),
-              ),
-              textInputAction: TextInputAction.search,
+    return SizedBox(
+      width: double.infinity,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          color: Colors.white.withOpacity(.15),
+          border: Border.all(color: Colors.white.withOpacity(.85), width: 1.6),
+        ),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          splashColor: Colors.white24,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+            child: Row(
+              children: [
+                Icon(icon, color: Colors.white, size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    label,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: .3,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-          ValueListenableBuilder<TextEditingValue>(
-            valueListenable: controller,
-            builder:
-                (_, value, __) =>
-                    value.text.isEmpty
-                        ? const SizedBox(width: 8)
-                        : IconButton(
-                          onPressed: onClear,
-                          icon: const Icon(
-                            Icons.close_rounded,
-                            color: Colors.blueGrey,
-                          ),
-                          splashRadius: 18,
-                        ),
-          ),
-        ],
+        ),
       ),
     );
   }

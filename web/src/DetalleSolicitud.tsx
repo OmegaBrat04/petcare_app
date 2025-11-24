@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { API_ENDPOINTS } from './api.config';
 import PETCARE_LOGO_URL from "./assets/PetCare Manager.png"; 
 
+// Estilos en línea originales (se mantienen igual)
 const styles = {
     container: { padding: '40px', maxWidth: '1000px', margin: '0 auto', fontFamily: 'Arial, sans-serif' },
     header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' },
@@ -24,15 +25,17 @@ const DetalleSolicitud: React.FC = () => {
     const navigate = useNavigate();
     const [data, setData] = useState<any>(null);
 
+    // --- NUEVOS ESTADOS PARA EL MODAL ---
+    const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
+    const [rejectReason, setRejectReason] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
     useEffect(() => {
         if (!id) return;
 
         const fetchData = async () => {
             try {
-                console.log("Iniciando fetch para ID:", id); // LOG 1
                 const url = API_ENDPOINTS.veterinarias.obtenerDetalle(Number(id));
-                console.log("URL:", url); // LOG 2
-
                 const res = await fetch(url);
                 
                 if (!res.ok) {
@@ -40,7 +43,6 @@ const DetalleSolicitud: React.FC = () => {
                 }
 
                 const jsonData = await res.json();
-                console.log("Datos recibidos:", jsonData); // LOG 3
                 setData(jsonData);
 
             } catch (error) {
@@ -52,33 +54,53 @@ const DetalleSolicitud: React.FC = () => {
         fetchData();
     }, [id]);
 
-    // FUNCIÓN PARA APROBAR O RECHAZAR
-    const handleEstado = async (nuevoEstado: 'Aprobada' | 'Rechazada') => {
-        if(!confirm(`¿Estás seguro de marcar esta solicitud como ${nuevoEstado}?`)) return;
-
+    // --- LÓGICA CENTRALIZADA PARA ENVIAR A LA API ---
+    const enviarActualizacion = async (nuevoEstado: 'Aprobada' | 'Rechazada', motivo: string = "") => {
+        setIsSubmitting(true);
         try {
             const response = await fetch(API_ENDPOINTS.veterinarias.actualizarEstado(Number(id)), {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nuevoEstado })
+                body: JSON.stringify({ 
+                    nuevoEstado,
+                    motivo // Se envía el motivo (estará vacío si es Aprobada)
+                })
             });
 
             if (response.ok) {
-                alert(`Veterinaria ${nuevoEstado} con éxito.`);
+                alert(`Solicitud ${nuevoEstado} correctamente.`);
                 navigate('/admin'); 
             } else {
-                alert('Error al actualizar el estado.');
+                const errorData = await response.json();
+                alert(`Error: ${errorData.mensaje || 'No se pudo actualizar el estado.'}`);
             }
         } catch (error) {
             console.error(error);
-            alert('Error de conexión.');
+            alert('Error de conexión con el servidor.');
+        } finally {
+            setIsSubmitting(false);
+            setIsRejectModalOpen(false); // Cerrar modal si estaba abierto
         }
+    };
+
+    // Handler para el botón "Aprobar"
+    const handleAprobar = () => {
+        if(confirm(`¿Estás seguro de APROBAR esta solicitud?`)) {
+            enviarActualizacion('Aprobada');
+        }
+    };
+
+    // Handler para el botón "Confirmar Rechazo" (dentro del modal)
+    const handleConfirmarRechazo = () => {
+        if (!rejectReason.trim()) return;
+        enviarActualizacion('Rechazada', rejectReason);
     };
 
     if (!data) return <div style={{padding: '50px', textAlign: 'center'}}>Cargando...</div>;
 
     return (
-        <div style={{backgroundColor: '#f0f2f5', minHeight: '100vh'}}>
+        <div style={{backgroundColor: '#f0f2f5', minHeight: '100vh', position: 'relative'}}>
+            {/* Navbar */}
             <div style={{background: 'white', padding: '12px 30px', borderBottom: '1px solid #ddd', display: 'flex', alignItems: 'center', gap: '10px'}}>
                 <img src={PETCARE_LOGO_URL} alt="Logo" style={{height: '32px'}} />
                 <div style={{display:'flex', flexDirection:'column', lineHeight:'1.1'}}>
@@ -102,7 +124,6 @@ const DetalleSolicitud: React.FC = () => {
                             <h1 style={{margin: 0, color: '#333'}}>{data.NombreComercial}</h1>
                             <p style={{margin: '5px 0 0', color: '#666'}}>
                                 Solicitud #{data.ID} • {data.Ciudad} • 
-                                {/* CORRECCIÓN AQUÍ: Usar EstadoVerificacion */}
                                 <strong style={{color: '#f0ad4e', marginLeft: '5px'}}>
                                     {data.EstadoVerificacion}
                                 </strong>
@@ -110,17 +131,18 @@ const DetalleSolicitud: React.FC = () => {
                         </div>
                     </div>
                     
-                    {/* CORRECCIÓN AQUÍ: Validar contra EstadoVerificacion */}
                     {data.EstadoVerificacion === 'Pendiente' && (
                         <div style={{display: 'flex', gap: '10px'}}>
+                            {/* BOTÓN RECHAZAR: Ahora abre el modal */}
                             <button 
-                                onClick={() => handleEstado('Rechazada')}
+                                onClick={() => setIsRejectModalOpen(true)}
                                 style={{padding: '10px 20px', borderRadius: '6px', border: '1px solid #dc3545', background: 'white', color: '#dc3545', cursor: 'pointer', fontWeight:'bold'}}
                             >
                                 Rechazar
                             </button>
+                            {/* BOTÓN APROBAR: Ejecuta lógica directa */}
                             <button 
-                                onClick={() => handleEstado('Aprobada')}
+                                onClick={handleAprobar}
                                 style={{padding: '10px 20px', borderRadius: '6px', border: 'none', background: '#28a745', color: 'white', cursor: 'pointer', fontWeight:'bold'}}
                             >
                                 Aprobar Registro
@@ -180,6 +202,66 @@ const DetalleSolicitud: React.FC = () => {
                     </div>
                 </div>
             </div>
+
+            {/* --- MODAL EMERGENTE DE RECHAZO --- */}
+            {isRejectModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden animate-fade-in">
+                        
+                        {/* Header Modal */}
+                        <div className="bg-red-50 px-6 py-4 border-b border-red-100 flex items-center gap-3">
+                            <div className="bg-red-100 p-2 rounded-full">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                            </div>
+                            <h3 className="text-lg font-bold text-gray-800">Rechazar Solicitud</h3>
+                        </div>
+
+                        {/* Body Modal */}
+                        <div className="p-6">
+                            <p className="text-sm text-gray-600 mb-4">
+                                Por favor, indica el motivo del rechazo. Esta información es importante para el solicitante.
+                            </p>
+                            
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Motivo del rechazo <span className="text-red-500">*</span>
+                            </label>
+                            <textarea
+                                value={rejectReason}
+                                onChange={(e) => setRejectReason(e.target.value)}
+                                rows={4}
+                                placeholder="Ej: La documentación del RFC no es legible, favor registrar la veterinaria nuevamente..."
+                                className="w-full rounded-md border border-gray-300 p-3 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-none transition shadow-sm"
+                            />
+                        </div>
+
+                        {/* Footer Modal */}
+                        <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3">
+                            <button
+                                onClick={() => {
+                                    setIsRejectModalOpen(false);
+                                    setRejectReason("");
+                                }}
+                                disabled={isSubmitting}
+                                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleConfirmarRechazo}
+                                disabled={!rejectReason.trim() || isSubmitting}
+                                className={`px-4 py-2 text-sm font-medium text-white rounded-md shadow-sm transition-colors
+                                    ${(!rejectReason.trim() || isSubmitting) 
+                                        ? 'bg-red-300 cursor-not-allowed' 
+                                        : 'bg-red-600 hover:bg-red-700'}`}
+                            >
+                                {isSubmitting ? 'Enviando...' : 'Confirmar Rechazo'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

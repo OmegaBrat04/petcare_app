@@ -18,15 +18,19 @@ export const API_ENDPOINTS = {
     register: `${API_BASE_URL}/web/auth/register`,
   },
 
-  // --- ENDPOINTS DE CITAS (ACTUALIZADO) ---
+  // ... dentro de API_ENDPOINTS
   citas: {
-    // Ahora es una función porque necesitamos pasar el ID de la veterinaria
-    obtenerPorVeterinaria: (id: number) => `${API_BASE_URL}/citas/${id}`,
-    
-    // Función para obtener la URL de actualización de estado de una cita específica
+    obtenerPorVeterinaria: (id: number) => `${API_BASE_URL}/citas/${id}`, // La vieja (opcional)
+    obtenerPorPropietario: (id: string) => `${API_BASE_URL}/citas-propietario/${id}`, // <--- LA NUEVA
     actualizarEstado: (id: string) => `${API_BASE_URL}/citas/estado/${id}`,
+    eliminar: (id: string) => `${API_BASE_URL}/citas/${id}`,
   },
-
+  // ...
+  // ... dentro de API_ENDPOINTS
+  dashboard: {
+    obtenerStats: (id: string) => `${API_BASE_URL}/dashboard/stats/${id}`,
+  },
+// ...
   // Placeholders
   pacientes: {},
   profesionales: {}

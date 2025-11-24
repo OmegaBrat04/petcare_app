@@ -19,6 +19,10 @@ import RegistroUsuario from './RegistroUsuario';
 // ⚠️ IMPORTANTE: Verifica si guardaste Citas.tsx en una carpeta "components" o en la raíz.
 // Si está en src/components/Citas.tsx usa esta línea:
 import Citas from './Citas'; 
+import EditarVet from './EditarVet'; // Importar el componente
+import Agenda from './Agenda'; // Importar el componente
+import Historial from './Historial'; // Importar
+import SolicitudesCitasUI from './SolicitudesCitas'
 // Si está en la misma carpeta que este archivo, usa: import Citas from './Citas';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
@@ -40,10 +44,15 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 
         {/* 3. RUTAS DE ADMIN */}
         <Route path="/admin" element={<InicioAdmin />} />
+
         <Route path="/admin/solicitud/:id" element={<DetalleSolicitud />} />
+        
 
         {/* 4. RUTA DE CITAS (NUEVA) */}
         <Route path="/citas" element={<Citas />} />
+        <Route path="/editar-veterinaria/:id" element={<EditarVet />} />
+        <Route path="/agenda" element={<Agenda />} />
+        <Route path="/historial" element={<Historial />} />
 
       </Routes>
     </BrowserRouter>

@@ -4,8 +4,20 @@ import './Inicio.css';
 import PETCARE_ICON_URL from "./assets/PetCare Manager.png";
 import { API_ENDPOINTS } from "./api.config";
 
+interface Veterinaria {
+    ID: number;
+    NombreComercial: string;
+    Ciudad: string;
+    Logo: string;
+    EstadoVerificacion: string;
+    MotivoRechazo?: string;
+}
+
 const Inicio: React.FC = () => {
-    const [misVeterinarias, setMisVeterinarias] = useState<any[]>([]);
+    const [misVeterinarias, setMisVeterinarias] = useState<Veterinaria[]>([]);
+    const [stats, setStats] = useState({ citasHoy: 0, citasPendientes: 0, ingresos: 0 });
+    const [isLoadingStats, setIsLoadingStats] = useState(true);
+
     const navigate = useNavigate();
     
     const usuarioId = localStorage.getItem('idUsuario'); 
@@ -17,23 +29,42 @@ const Inicio: React.FC = () => {
             return;
         }
 
-        const fetchMisVeterinarias = async () => {
+        const fetchDatosIniciales = async () => {
+            // 1. Cargar estadísticas
             try {
-                const response = await fetch(API_ENDPOINTS.veterinarias.listarPropias(usuarioId));
-                if (response.ok) {
-                    const data = await response.json();
-                    setMisVeterinarias(data);
+                const statsResponse = await fetch(API_ENDPOINTS.dashboard.obtenerStats(usuarioId));
+                if (statsResponse.ok) {
+                    const statsData = await statsResponse.json();
+                    setStats(statsData);
                 }
             } catch (error) {
-                console.error("Error cargando lista:", error);
+                console.error("Error cargando estadísticas:", error);
+            } finally {
+                setIsLoadingStats(false);
+            }
+
+            // 2. Cargar mis veterinarias
+            try {
+                const vetsResponse = await fetch(API_ENDPOINTS.veterinarias.listarPropias(usuarioId));
+                if (vetsResponse.ok) {
+                    const vetsData = await vetsResponse.json();
+                    setMisVeterinarias(vetsData);
+                }
+            } catch (error) {
+                console.error("Error cargando lista de veterinarias:", error);
             }
         };
-        fetchMisVeterinarias();
+
+        fetchDatosIniciales();
     }, [usuarioId, navigate]);
 
     const handleLogout = () => {
         localStorage.clear();
         navigate('/');
+    };
+
+    const handleClickMenuCitas = () => {
+        navigate('/citas');
     };
 
     const getEstadoColor = (estado: string) => {
@@ -43,6 +74,13 @@ const Inicio: React.FC = () => {
             default: return { bg: '#fff3cd', text: '#856404', border: '#ffeeba' };
         }
     };
+
+    // --- CAMBIO 1: Incluir 'Pendiente' en el filtro ---
+    const notificacionesImportantes = misVeterinarias.filter(v => 
+        v.EstadoVerificacion === 'Rechazada' || 
+        v.EstadoVerificacion === 'Aprobada' || 
+        v.EstadoVerificacion === 'Pendiente'
+    );
 
     return (
         <div className="inicio-container">
@@ -55,12 +93,12 @@ const Inicio: React.FC = () => {
                     </div>
                 </div>
 
-                {/* --- MENÚ DE NAVEGACIÓN --- */}
                 <nav className="navbar-menu">
                     <Link to="/inicio" className="menu-item active">Inicio</Link>
-                    
-                    {/* AQUI ESTÁ EL CAMBIO: Ahora es un Link real hacia /citas */}
-                    <Link to="/citas" className="menu-item">Citas</Link>
+                    <span onClick={handleClickMenuCitas} className="menu-item" style={{cursor: 'pointer'}}>Citas</span>                    
+                    <Link to="/agenda" className="menu-item">Agenda</Link>
+                    <Link to="/historial" className="menu-item">Historial</Link>
+
                 </nav>
 
                 <div className="navbar-right" style={{gap: '15px'}}>
@@ -75,17 +113,38 @@ const Inicio: React.FC = () => {
                 <div className="paw-print left-top"></div>
 
                 <div className="dashboard-row">
+                    {/* --- PANEL RESUMEN GLOBAL --- */}
                     <div className="card citas-hoy">
                         <h3>Resumen Global</h3>
                         <div className="citas-stats">
-                            <div className="stat-item"><span className="stat-number primary">0</span><span className="stat-label">Citas Hoy</span></div>
-                            <div className="stat-item"><span className="stat-number">0</span><span className="stat-label">Ingresos</span></div>
+                            {isLoadingStats ? (
+                                <p style={{color:'#999', textAlign:'center'}}>Cargando...</p>
+                            ) : (
+                                <>
+                                    <div className="stat-item">
+                                        <span className="stat-number primary">{stats.citasHoy}</span>
+                                        <span className="stat-label">Citas Hoy</span>
+                                    </div>
+                                    <div className="stat-item">
+                                        <span className="stat-number danger">{stats.citasPendientes}</span>
+                                        <span className="stat-label">Pendientes</span>
+                                    </div>
+                                </>
+                            )}
                         </div>
-                        <p style={{textAlign:'center', color:'#999', fontSize:'13px', fontStyle:'italic', marginTop:'20px'}}>
-                            Selecciona una sucursal aprobada para ver detalles.
-                        </p>
+                        
+                        <div style={{marginTop: '20px', padding: '15px', backgroundColor: '#f8f9fa', borderRadius: '8px', border: '1px solid #e9ecef', textAlign: 'center'}}>
+                            <p style={{fontSize: '13px', color: '#002D62', margin: 0, lineHeight: '1.5'}}>
+                                Bienvenido a <strong>PetCare Manager</strong>.<br/>
+                                {stats.citasPendientes > 0 
+                                    ? <span>Tienes <strong style={{color: '#dc3545'}}>{stats.citasPendientes}</strong> citas pendientes de aprobación.</span>
+                                    : <span>No tienes citas pendientes por el momento.</span>
+                                }
+                            </p>
+                        </div>
                     </div>
 
+                    {/* --- MIS SUCURSALES --- */}
                     <div className="card veterinarios" style={{flex: 1.5}}>
                         <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', borderBottom:'1px solid #eee', paddingBottom:'15px', marginBottom:'15px'}}>
                             <h3 style={{border:'none', padding:0, margin:0}}>Mis Sucursales</h3>
@@ -103,13 +162,18 @@ const Inicio: React.FC = () => {
                                 <div style={{display:'flex', flexDirection:'column', gap:'15px'}}>
                                     {misVeterinarias.map((vet) => {
                                         const colores = getEstadoColor(vet.EstadoVerificacion);
-
+                                        // Solo dejamos editar si NO está pendiente (o puedes dejarlo siempre, a tu gusto)
+                                        // Aquí lo dejé siempre visible.
+                                        
                                         return (
-                                            <div key={vet.ID} style={{
-                                                display:'flex', alignItems:'center', gap:'15px', 
-                                                padding:'15px', borderRadius:'10px', border:'1px solid #eee',
-                                                backgroundColor: '#fff', boxShadow:'0 2px 5px rgba(0,0,0,0.02)'
-                                            }}>
+                                            <div 
+                                                key={vet.ID} 
+                                                style={{
+                                                    display:'flex', alignItems:'center', gap:'15px', 
+                                                    padding:'15px', borderRadius:'10px', border:'1px solid #eee',
+                                                    backgroundColor: '#fff', boxShadow:'0 2px 5px rgba(0,0,0,0.02)',
+                                                }}
+                                            >
                                                 {vet.Logo ? (
                                                     <img src={vet.Logo} style={{width:'50px', height:'50px', borderRadius:'50%', objectFit:'cover', border:'1px solid #eee'}} alt="Logo" />
                                                 ) : (
@@ -128,6 +192,24 @@ const Inicio: React.FC = () => {
                                                     }}>
                                                         {vet.EstadoVerificacion}
                                                     </span>
+                                                    
+                                                    <button 
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            navigate(`/editar-veterinaria/${vet.ID}`);
+                                                        }}
+                                                        style={{
+                                                            fontSize: '12px', 
+                                                            color: '#007bff', 
+                                                            background: 'none', 
+                                                            border: 'none', 
+                                                            cursor: 'pointer', 
+                                                            textDecoration: 'underline',
+                                                            marginTop: '2px'
+                                                        }}
+                                                    >
+                                                         Gestionar Veterinaria
+                                                    </button>
                                                 </div>
                                             </div>
                                         );
@@ -138,12 +220,79 @@ const Inicio: React.FC = () => {
                     </div>
                 </div>
 
+                {/* --- NOTIFICACIONES DEL SISTEMA (DINÁMICAS) --- */}
                 <div className="dashboard-row" style={{marginTop:'20px'}}>
                     <div className="card alertas">
-                         <h3 style={{fontSize:'16px'}}>Notificaciones del Sistema</h3>
-                         <div style={{padding:'20px', textAlign:'center', color:'#999', fontSize:'13px'}}>
-                             <p>Bienvenido a PetCare Manager.</p>
-                             <p>Registra tus sucursales para comenzar a administrar citas.</p>
+                         <h3 style={{fontSize:'16px', marginBottom: '15px'}}>Notificaciones del Sistema</h3>
+                         
+                         <div style={{display: 'flex', flexDirection: 'column', gap: '15px'}}>
+                            
+                            {notificacionesImportantes.length === 0 && (
+                                <div style={{padding:'20px', textAlign:'center', color:'#999', fontSize:'13px', fontStyle: 'italic'}}>
+                                    No hay alertas de validación nuevas.
+                                </div>
+                            )}
+
+                            {notificacionesImportantes.map(vet => {
+                                // 1. CASO RECHAZADA
+                                if (vet.EstadoVerificacion === 'Rechazada') {
+                                    return (
+                                        <div key={vet.ID} style={{
+                                            display: 'flex', gap: '15px', padding: '15px', 
+                                            backgroundColor: '#fff5f5', borderLeft: '4px solid #dc3545', borderRadius: '4px',
+                                            alignItems: 'flex-start'
+                                        }}>
+                                            <div style={{color: '#dc3545', fontSize: '20px'}}>⚠️</div>
+                                            <div>
+                                                <h4 style={{margin: '0 0 5px 0', color: '#721c24', fontSize: '14px'}}>Solicitud Rechazada: {vet.NombreComercial}</h4>
+                                                <p style={{margin: 0, fontSize: '13px', color: '#555'}}>
+                                                    <strong>Motivo:</strong> {vet.MotivoRechazo || 'No se especificó un motivo.'}
+                                                </p>
+                                                <Link to={`/editar-veterinaria/${vet.ID}`} style={{fontSize:'12px', color:'#dc3545', textDecoration:'underline', marginTop:'5px', display:'inline-block'}}>
+                                                    Corregir información
+                                                </Link>
+                                            </div>
+                                        </div>
+                                    );
+                                } 
+                                // 2. CASO APROBADA
+                                else if (vet.EstadoVerificacion === 'Aprobada') {
+                                    return (
+                                        <div key={vet.ID} style={{
+                                            display: 'flex', gap: '15px', padding: '15px', 
+                                            backgroundColor: '#f0fff4', borderLeft: '4px solid #28a745', borderRadius: '4px',
+                                            alignItems: 'flex-start'
+                                        }}>
+                                            <div style={{color: '#28a745', fontSize: '20px'}}>✅</div>
+                                            <div>
+                                                <h4 style={{margin: '0 0 5px 0', color: '#155724', fontSize: '14px'}}>¡Felicidades! {vet.NombreComercial} ha sido aprobada.</h4>
+                                                <p style={{margin: 0, fontSize: '13px', color: '#555'}}>
+                                                    Tu clínica ya está visible. Configura tus horarios para comenzar.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    );
+                                }
+                                // 3. CASO PENDIENTE (NUEVO)
+                                else if (vet.EstadoVerificacion === 'Pendiente') {
+                                    return (
+                                        <div key={vet.ID} style={{
+                                            display: 'flex', gap: '15px', padding: '15px', 
+                                            backgroundColor: '#fffbf0', borderLeft: '4px solid #ffc107', borderRadius: '4px',
+                                            alignItems: 'flex-start'
+                                        }}>
+                                            <div style={{color: '#ffc107', fontSize: '20px'}}>⏳</div>
+                                            <div>
+                                                <h4 style={{margin: '0 0 5px 0', color: '#856404', fontSize: '14px'}}>Solicitud en Revisión: {vet.NombreComercial}</h4>
+                                                <p style={{margin: 0, fontSize: '13px', color: '#666'}}>
+                                                    Estamos validando la información de tu veterinaria. Te notificaremos pronto.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    );
+                                }
+                                return null;
+                            })}
                          </div>
                     </div>
                 </div>

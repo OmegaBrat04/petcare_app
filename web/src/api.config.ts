@@ -1,9 +1,8 @@
-// Usamos tu IP y Puerto (3001) que ya sabemos que funcionan
+// Usamos tu IP y Puerto (3001)
 const API_BASE_URL = "http://127.0.0.1:3001/api";
 
 export const API_ENDPOINTS = {
   // --- TUS ENDPOINTS DE VETERINARIAS ---
-  // (Coinciden con app.post('/api/veterinarias/...') en tu server)
   veterinarias: {
     registro: `${API_BASE_URL}/veterinarias/registro`,
     listarPendientes: `${API_BASE_URL}/veterinarias/pendientes`,
@@ -13,18 +12,25 @@ export const API_ENDPOINTS = {
     listarPropias: (id: string) => `${API_BASE_URL}/veterinarias/propias/${id}`,
   },
 
-  // --- ENDPOINTS DE TU COMPAÑERO (Auth) ---
-  // (Coinciden con app.post('/api/web/auth/...') en tu server)
+  // --- ENDPOINTS DE AUTH ---
   auth: { 
     login: `${API_BASE_URL}/web/auth/login`,
     register: `${API_BASE_URL}/web/auth/register`,
   },
 
-  // --- ENDPOINT DE CITAS (Nuevo) ---
+  // ... dentro de API_ENDPOINTS
   citas: {
-    getAll: `${API_BASE_URL}/citas`,
+    obtenerPorVeterinaria: (id: number) => `${API_BASE_URL}/citas/${id}`, // La vieja (opcional)
+    obtenerPorPropietario: (id: string) => `${API_BASE_URL}/citas-propietario/${id}`, // <--- LA NUEVA
+    actualizarEstado: (id: string) => `${API_BASE_URL}/citas/estado/${id}`,
+    eliminar: (id: string) => `${API_BASE_URL}/citas/${id}`,
   },
-
+  // ...
+  // ... dentro de API_ENDPOINTS
+  dashboard: {
+    obtenerStats: (id: string) => `${API_BASE_URL}/dashboard/stats/${id}`,
+  },
+// ...
   // Placeholders
   pacientes: {},
   profesionales: {}

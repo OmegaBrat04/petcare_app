@@ -26,12 +26,11 @@ const Login: React.FC = () => {
             const data = await response.json();
 
             if (response.ok && data.success) {
-                // 1. Guardar sesión en el navegador
                 localStorage.setItem('idUsuario', data.idUsuario);
                 localStorage.setItem('nombreUsuario', data.nombre);
                 localStorage.setItem('rolUsuario', data.rol);
 
-                // 2. Lógica de Redirección según el Rol
+               
                 if (data.rol === 'Admin') {
                     navigate('/admin');
                 } else {

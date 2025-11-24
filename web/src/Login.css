@@ -1,4 +1,3 @@
-/* Importar los estilos del logo para mantener la consistencia */
 .brand-text {
     display: flex;
     flex-direction: column;
@@ -10,7 +9,6 @@
     font-size: 24px;
     font-weight: 900;
     color: #002D62;
-    /* Azul Oscuro */
     font-family: 'Arial Black', Arial, sans-serif;
 }
 
@@ -18,11 +16,9 @@
     font-size: 21px;
     font-weight: bold;
     color: #33CCFF;
-    /* Azul Celeste */
     font-family: Arial, sans-serif;
 }
 
-/* Contenedor principal */
 .login-container {
     display: flex;
     justify-content: center;

@@ -7,7 +7,12 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:petcare_app/App/Modelo/Clinica.dart';
 
 class ApiService {
-  static const String _baseUrl = 'http://10.0.2.2:3000/api/mobile';
+  static String get _baseUrl {
+    if (kIsWeb) return 'http://localhost:3000/api/mobile';
+    if (Platform.isAndroid) return 'http://10.0.2.2:3000/api/mobile';
+    return 'http://localhost:3000/api/mobile';
+  }
+
   static final FlutterSecureStorage _storage = const FlutterSecureStorage();
   // --------------------------------- REGISTRO ---------------------------------
   Future<Map<String, dynamic>> signUp({

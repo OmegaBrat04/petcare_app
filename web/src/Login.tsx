@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { API_ENDPOINTS } from './api.config';
 import PETCARE_LOGO_URL from "./assets/PetCare Manager.png";
+import './Login.css';
 
 const Login: React.FC = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    
+
     const navigate = useNavigate();
 
     const handleLogin = async (e: React.FormEvent) => {
@@ -17,6 +18,7 @@ const Login: React.FC = () => {
         setLoading(true);
 
         try {
+            // Petición al Backend Unificado
             const response = await fetch(API_ENDPOINTS.auth.login, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -26,15 +28,24 @@ const Login: React.FC = () => {
             const data = await response.json();
 
             if (response.ok && data.success) {
-                localStorage.setItem('idUsuario', data.idUsuario);
-                localStorage.setItem('nombreUsuario', data.nombre);
-                localStorage.setItem('rolUsuario', data.rol);
+                // ⚠️ CORRECCIÓN CLAVE AQUÍ:
+                // El backend devuelve: { user: { id: 1, nombre: '...' } }
+                // Antes buscábamos data.idUsuario (que era undefined)
 
-               
-                if (data.rol === 'Admin') {
-                    navigate('/admin');
+                if (data.user && data.user.id) {
+                    localStorage.setItem('idUsuario', data.user.id.toString());
+                    localStorage.setItem('nombreUsuario', data.user.nombre);
+                    localStorage.setItem('rolUsuario', data.user.rol);
+
+                    console.log("✅ Login exitoso. Usuario guardado:", data.user);
+
+                    if (data.user.rol === 'Admin') {
+                        navigate('/admin');
+                    } else {
+                        navigate('/inicio');
+                    }
                 } else {
-                    navigate('/inicio');
+                    setError('Error: El servidor no devolvió la información del usuario.');
                 }
             } else {
                 setError(data.message || 'Error al iniciar sesión');
@@ -48,32 +59,33 @@ const Login: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center p-4">
-            <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md border border-gray-100">
-                <div className="flex flex-col items-center mb-6">
-                    <img src={PETCARE_LOGO_URL} alt="Logo" className="h-16 w-16 object-contain mb-2" />
-                    <h1 className="text-2xl font-bold text-[#002D62]">PetCare</h1>
-                    <h2 className="text-xl font-bold text-[#33CCFF] -mt-1">Manager</h2>
-                    <p className="text-gray-500 mt-2">Acceso al Panel Web</p>
+        <div className="login-container">
+            <div className="login-card">
+                <div className="text-center mb-8">
+                    <img src={PETCARE_LOGO_URL} alt="PetCare Logo" className="w-24 mx-auto mb-4" />
+                    <div className="brand-text">
+                        <span className="brand-main">PetCare</span>
+                        <span className="brand-sub">Manager</span>
+                    </div>
                 </div>
 
-                <form onSubmit={handleLogin} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                        <input 
-                            type="email" 
+                <form onSubmit={handleLogin} className="login-form">
+                    <div className="input-group">
+                        <label>Correo Electrónico</label>
+                        <input
+                            type="email"
                             required
                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                            placeholder="ejemplo@dominio.com"
+                            placeholder="veterinario@ejemplo.com"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                         />
                     </div>
-                    
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
-                        <input 
-                            type="password" 
+
+                    <div className="input-group">
+                        <label>Contraseña</label>
+                        <input
+                            type="password"
                             required
                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                             placeholder="••••••••"
@@ -88,10 +100,10 @@ const Login: React.FC = () => {
                         </div>
                     )}
 
-                    <button 
-                        type="submit" 
+                    <button
+                        type="submit"
                         disabled={loading}
-                        className="w-full bg-[#4CAF50] hover:bg-[#45a049] text-white font-bold py-3 rounded-lg transition-colors shadow-sm disabled:opacity-50"
+                        className="login-button w-full mt-4"
                     >
                         {loading ? 'Verificando...' : 'Iniciar Sesión'}
                     </button>

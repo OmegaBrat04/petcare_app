@@ -1,31 +1,32 @@
+// Cambios marcados con 🟢 CORREGIDO
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom'; // Importar useNavigate
+import { Link, useNavigate } from 'react-router-dom';
 import './InicioAdmin.css';
 import PETCARE_ICON_URL from "./assets/PetCare Manager.png";
 import { API_ENDPOINTS } from "./api.config";
 
-// 🚨 INTERFAZ CORREGIDA: Usamos minúsculas para que coincida con el JSON del backend
 interface Solicitud {
-    id: number;                 // Antes: ID
-    nombre_comercial: string;   // Antes: NombreComercial
-    Responsable: string;        // Este SÍ es mayúscula porque lo creamos con 'AS' en el SQL
-    ciudad: string;             // Antes: Ciudad
-    FechaSolicitud: string;     // Este SÍ es mayúscula (del 'AS')
+    id: number; // 🟢 CORREGIDO: de ID a id
+    nombre_comercial: string; // 🟢 CORREGIDO: Asumiendo el naming del backend SQL
+    Responsable: string;
+    Ciudad: string;
+    FechaSolicitud: string;
 }
 
 const InicioAdmin: React.FC = () => {
     const [solicitudes, setSolicitudes] = useState<Solicitud[]>([]);
-    const navigate = useNavigate(); // Hook para navegar
+    const navigate = useNavigate();
 
     useEffect(() => {
         fetch(API_ENDPOINTS.veterinarias.listarPendientes)
             .then(res => res.json())
-            .then((data: Solicitud[]) => setSolicitudes(data)) // Tipamos la data
-            .catch(err => console.error("Error cargando pendientes:", err));
+            .then(data => setSolicitudes(data))
+            .catch(err => console.error("Error:", err));
     }, []);
 
     return (
         <div className="admin-container">
+            {/* ... Código del Header sin cambios ... */}
             <header className="navbar-admin">
                 <div className="navbar-left">
                     <img src={PETCARE_ICON_URL} alt="Logo" className="navbar-logo-icon" style={{ height: '32px', width: 'auto' }} />
@@ -59,20 +60,19 @@ const InicioAdmin: React.FC = () => {
                                     <tr><th>ID</th><th>Veterinaria</th><th>Responsable</th><th>Ciudad</th><th>Fecha</th><th>Estado</th><th>Acciones</th></tr>
                                 </thead>
                                 <tbody>
-                                    {/* 🚨 CORRECCIÓN: Usamos .id y .nombre_comercial */}
                                     {solicitudes.map((sol) => (
                                         <tr key={sol.id}>
                                             <td>#{sol.id}</td>
                                             <td className="font-bold">{sol.nombre_comercial}</td>
                                             <td>{sol.Responsable}</td>
-                                            <td>{sol.ciudad}</td>
+                                            <td>{sol.Ciudad}</td>
                                             <td>{sol.FechaSolicitud}</td>
                                             <td><span className="status-badge pending">Pendiente</span></td>
                                             <td>
+                                                {/* BOTÓN QUE LLEVA AL DETALLE */}
                                                 <button
                                                     className="btn-revisar"
-                                                    // 🚨 CORRECCIÓN: Usamos .id
-                                                    onClick={() => navigate(`/admin/solicitud/${sol.id}`)}
+                                                    onClick={() => navigate(`/admin/solicitud/${sol.id}`)} // 🟢 CORREGIDO: sol.ID -> sol.id
                                                 >
                                                     Revisar Datos
                                                 </button>

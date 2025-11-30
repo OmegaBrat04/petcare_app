@@ -153,98 +153,195 @@ app.get('/api/veterinarias/detalle/:id', async (req, res) => {
     }
 });
 
-app.post('/api/veterinarias/registro', async (req, res) => {
+// ...existing code...
+
+router.post('/veterinarias/registro', async (req, res) => {
     const payload = req.body;
-    const { nombreResponsable, apellidosResponsable, emailResponsable, telefonoResponsable, puesto, documentoIdentidad, nombreComercial, razonSocial, rfc, descripcionVeterinaria, categorias, calle, numeroExterior, colonia, ciudad, estado, codigoPostal, referencias, telefonoClinica, whatsapp, emailClinica, sitioWeb, facebook, instagram, servicios, horarios, logoUrl, usuarioWebID } = payload;
+    const {
+        // Responsable
+        nombreResponsable = '',
+        apellidosResponsable = '',
+        emailResponsable = '',
+        telefonoResponsable = '',
+        documentoIdentidad = '',
+        puesto = '',
+        
+        // Veterinaria
+        nombreComercial = '',
+        descripcionVeterinaria = '',
+        horaApertura = '',
+        horaCierre = '',
+        razonSocial = '',
+        rfc = '',
+        
+        // Ubicación
+        calle = '',
+        numeroExterior = '',
+        colonia = '',
+        ciudad = '',
+        estado = '',
+        codigoPostal = '',
+        referencias = '',
+        
+        // Contacto
+        telefonoClinica = '',
+        whatsapp = '',
+        emailClinica = '',
+        sitioWeb = '',
+        facebook = '',
+        instagram = '',
+        
+        // Servicios y Categorías
+        servicios = [],
+        categorias = [],
+        
+        // Logo y Usuario
+        logoUrl = '',
+        usuarioWebID = null
+    } = payload;
+
+    // Validación básica
+    if (!nombreComercial || !emailResponsable || !calle || !ciudad) {
+        return res.status(400).json({ 
+            mensaje: 'Faltan campos obligatorios: nombre comercial, email, calle y ciudad.' 
+        });
+    }
 
     try {
-        const pool = await sql.connect(dbConfig);
-        const transaction = new sql.Transaction(pool);
-        await transaction.begin();
+        // 1. CONSTRUIR DIRECCIÓN COMPLETA
+        const direccionCompleta = `${calle} ${numeroExterior}, ${colonia}, ${ciudad}, ${estado}, ${codigoPostal}`.trim();
+        console.log('📍 Dirección a geocodificar:', direccionCompleta);
+
+        // 2. GEOCODIFICAR
+        let lat = null;
+        let lon = null;
         try {
-            const requestVet = new sql.Request(transaction);
+            const geoResult = await geocoder.geocode(direccionCompleta);
+            if (geoResult && geoResult.length > 0) {
+                lat = geoResult[0].latitude;
+                lon = geoResult[0].longitude;
+                console.log(`✅ Coordenadas obtenidas: lat=${lat}, lon=${lon}`);
+            }
+        } catch (geoErr) {
+            console.warn('⚠️ Error en geocodificación:', geoErr.message);
+        }
 
-            // Mapeo de V2 (Payload) a V1 (Base de Datos)
-            requestVet.input('NomCom', sql.NVarChar, nombreComercial);
-            requestVet.input('RazSoc', sql.NVarChar, razonSocial);
-            requestVet.input('RFC', sql.NVarChar, rfc);
-            requestVet.input('Desc', sql.NVarChar, descripcionVeterinaria);
-            requestVet.input('Cat', sql.NVarChar, categorias);
-            requestVet.input('NomResp', sql.NVarChar, nombreResponsable);
-            requestVet.input('ApeResp', sql.NVarChar, apellidosResponsable);
-            requestVet.input('EmailResp', sql.NVarChar, emailResponsable);
-            requestVet.input('TelResp', sql.NVarChar, telefonoResponsable);
-            requestVet.input('Puesto', sql.NVarChar, puesto);
-            requestVet.input('DocID', sql.NVarChar, documentoIdentidad);
-            requestVet.input('Calle', sql.NVarChar, calle);
-            requestVet.input('NumExt', sql.NVarChar, numeroExterior);
-            requestVet.input('Col', sql.NVarChar, colonia);
-            requestVet.input('Ciu', sql.NVarChar, ciudad);
-            requestVet.input('Edo', sql.NVarChar, estado);
-            requestVet.input('CP', sql.NVarChar, codigoPostal);
-            requestVet.input('Ref', sql.NVarChar, referencias);
-            requestVet.input('TelClin', sql.NVarChar, telefonoClinica);
-            requestVet.input('Whats', sql.NVarChar, whatsapp);
-            requestVet.input('EmailClin', sql.NVarChar, emailClinica);
-            requestVet.input('Web', sql.NVarChar, sitioWeb);
-            requestVet.input('Face', sql.NVarChar, facebook);
-            requestVet.input('Insta', sql.NVarChar, instagram);
-            requestVet.input('Logo', sql.NVarChar, logoUrl);
-            requestVet.input('UID', sql.Int, usuarioWebID); // usuario_web_id
+        const trx = await db.transaction();
 
-            // Usamos los nombres de columna V1 (minúsculas)
-            const resultVet = await requestVet.query(`
-                INSERT INTO dbo.veterinarias (
-                    nombre_comercial, razon_social, rfc, descripcion, categorias,
-                    nombre_responsable, apellidos_responsable, email_responsable, telefono_responsable, puesto, documento_identidad,
-                    calle, numero_exterior, colonia, ciudad, estado, codigo_postal, referencias,
-                    telefono_clinica, whatsapp, email_clinica, sitio_web, facebook, instagram,
-                    logo, estado_verificacion, usuario_web_id
-                ) 
-                OUTPUT inserted.id
-                VALUES (
-                    @NomCom, @RazSoc, @RFC, @Desc, @Cat,
-                    @NomResp, @ApeResp, @EmailResp, @TelResp, @Puesto, @DocID,
-                    @Calle, @NumExt, @Col, @Ciu, @Edo, @CP, @Ref,
-                    @TelClin, @Whats, @EmailClin, @Web, @Face, @Insta,
-                    @Logo, 'Pendiente', @UID
-                )
-            `);
+        try {
+            // 3. INSERTAR EN VeterinariasMaestra (CAMBIO PRINCIPAL)
+            const [inserted] = await trx('VeterinariasMaestra')
+                .insert({
+                    // IDs y Referencias
+                    usuario_web_id: usuarioWebID,
+                    
+                    // Información Básica
+                    nombre_comercial: nombreComercial,
+                    razon_social: razonSocial || null,
+                    rfc: rfc || null,
+                    descripcion: descripcionVeterinaria || null,
+                    categorias: Array.isArray(categorias) ? categorias.join(', ') : categorias,
+                    
+                    // Responsable
+                    nombre_responsable: nombreResponsable,
+                    apellidos_responsable: apellidosResponsable,
+                    email_responsable: emailResponsable,
+                    telefono_responsable: telefonoResponsable,
+                    puesto: puesto || null,
+                    documento_identidad: documentoIdentidad || null,
+                    
+                    // Ubicación
+                    calle: calle,
+                    numero_exterior: numeroExterior,
+                    colonia: colonia,
+                    ciudad: ciudad,
+                    estado: estado,
+                    codigo_postal: codigoPostal,
+                    referencias: referencias || null,
+                    direccion_completa: direccionCompleta,
+                    lat: lat,
+                    lon: lon,
+                    
+                    // Contacto
+                    telefono_clinica: telefonoClinica || telefonoResponsable,
+                    email_clinica: emailClinica || emailResponsable,
+                    whatsapp: whatsapp || null,
+                    sitio_web: sitioWeb || null,
+                    facebook: facebook || null,
+                    instagram: instagram || null,
+                    
+                    // Horarios
+                    horario_apertura: horaApertura || null,
+                    horario_cierre: horaCierre || null,
+                    
+                    // Logo y Estado
+                    logo: logoUrl || null,
+                    estado_publicacion: 'borrador',
+                    estado_verificacion: 'Pendiente',
+                    verificado: 0,
+                    
+                    // Fechas
+                    fecha_registro: db.fn.now(),
+                    updated_at: db.fn.now()
+                })
+                .returning('id');
 
-            const veterinariaID = resultVet.recordset[0].id;
-            console.log(`✅ Veterinaria creada en BD con ID: ${veterinariaID}`);
+            const veterinariaID = typeof inserted === 'object' ? inserted.id : inserted;
+            console.log(`✅ Veterinaria insertada con ID: ${veterinariaID}`);
 
+            // 4. INSERTAR CATEGORÍAS (si las hay)
+            if (categorias && categorias.length > 0) {
+                const categoriasData = categorias.map(cat => ({
+                    veterinaria_id: veterinariaID,
+                    categoria: cat
+                }));
+                await trx('categorias_veterinaria').insert(categoriasData);
+            }
+
+            // 5. INSERTAR SERVICIOS
             if (servicios && servicios.length > 0) {
-                for (const serv of servicios) {
-                    const reqServ = new sql.Request(transaction);
-                    reqServ.input('Vid', sql.Int, veterinariaID).input('Nom', sql.NVarChar, serv.nombre).input('Pre', sql.Decimal(10, 2), serv.precio).input('Desc', sql.NVarChar, serv.descripcion || '');
-                    await reqServ.query(`INSERT INTO dbo.servicios (veterinaria_id, nombre, precio, descripcion, activo) VALUES (@Vid, @Nom, @Pre, @Desc, 1)`);
+                const serviciosData = servicios
+                    .filter(s => s.activo)
+                    .map(s => ({
+                        veterinaria_id: veterinariaID,
+                        nombre: s.nombre || '',
+                        descripcion: s.descripcion || descripcionVeterinaria || null,
+                        precio: s.precio || 0,
+                        activo: s.activo
+                    }));
+
+                if (serviciosData.length > 0) {
+                    await trx('servicios').insert(serviciosData);
                 }
             }
 
-            if (horarios && horarios.length > 0) {
-                for (const hor of horarios) {
-                    const reqHor = new sql.Request(transaction);
-                    reqHor.input('Vid', sql.Int, veterinariaID).input('Dia', sql.NVarChar, hor.dia).input('Ape', sql.NVarChar, hor.apertura).input('Cie', sql.NVarChar, hor.cierre);
-                    await reqHor.query(`INSERT INTO dbo.Horarios (veterinaria_id, dia, apertura, cierre) VALUES (@Vid, @Dia, @Ape, @Cie)`);
-                }
-            }
-
-            await transaction.commit();
-            pool.close();
-            res.status(201).json({ mensaje: 'Registro exitoso', id: veterinariaID });
+            await trx.commit();
+            
+            res.status(201).json({ 
+                mensaje: '✅ Registro guardado exitosamente.',
+                id: veterinariaID,
+                coordenadas: lat && lon ? { lat, lon } : null,
+                advertencia: !lat || !lon ? 'No se pudieron obtener coordenadas. Verifica la dirección.' : null
+            });
 
         } catch (txError) {
-            await transaction.rollback();
-            pool.close();
-            console.error("❌ Error en transacción SQL:", txError);
-            res.status(500).json({ mensaje: 'Error guardando datos', error: txError.message });
+            await trx.rollback();
+            console.error('❌ Error en transacción:', txError);
+            res.status(500).json({ 
+                mensaje: '❌ Error al guardar en la base de datos.',
+                detalle: txError.message 
+            });
         }
-    } catch (err) {
-        console.error("❌ Error general de conexión:", err);
-        res.status(500).json({ mensaje: 'Error de servidor' });
+
+    } catch (error) {
+        console.error('❌ Error general:', error);
+        res.status(503).json({ 
+            mensaje: '🚨 Error en el servidor.',
+            detalle: error.message 
+        });
     }
 });
+
 
 app.put('/api/veterinarias/estado/:id', async (req, res) => {
     const { id } = req.params;

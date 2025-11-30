@@ -5,12 +5,12 @@ import PETCARE_ICON_URL from "./assets/PetCare Manager.png";
 import { API_ENDPOINTS } from "./api.config";
 
 interface Veterinaria {
-    ID: number;
-    NombreComercial: string;
-    Ciudad: string;
-    Logo: string;
-    EstadoVerificacion: string;
-    MotivoRechazo?: string;
+    id: number;                    // ✅ Cambio: ID → id
+    nombre_comercial: string;      // ✅ Cambio: NombreComercial → nombre_comercial
+    ciudad: string;                // ✅ Cambio: Ciudad → ciudad
+    logo: string;                  // ✅ Cambio: Logo → logo
+    estado_verificacion: string;   // ✅ Cambio: EstadoVerificacion → estado_verificacion
+    referencias?: string;          // ✅ Cambio: MotivoRechazo → referencias
 }
 
 const Inicio: React.FC = () => {
@@ -77,10 +77,10 @@ const Inicio: React.FC = () => {
 
     // --- CAMBIO 1: Incluir 'Pendiente' en el filtro ---
     const notificacionesImportantes = misVeterinarias.filter(v => 
-        v.EstadoVerificacion === 'Rechazada' || 
-        v.EstadoVerificacion === 'Aprobada' || 
-        v.EstadoVerificacion === 'Pendiente'
-    );
+    v.estado_verificacion === 'Rechazada' || 
+    v.estado_verificacion === 'Aprobada' || 
+    v.estado_verificacion === 'Pendiente'
+);
 
     return (
         <div className="inicio-container">
@@ -161,28 +161,28 @@ const Inicio: React.FC = () => {
                             ) : (
                                 <div style={{display:'flex', flexDirection:'column', gap:'15px'}}>
                                     {misVeterinarias.map((vet) => {
-                                        const colores = getEstadoColor(vet.EstadoVerificacion);
+                                        const colores = getEstadoColor(vet.estado_verificacion);
                                         // Solo dejamos editar si NO está pendiente (o puedes dejarlo siempre, a tu gusto)
                                         // Aquí lo dejé siempre visible.
                                         
                                         return (
                                             <div 
-                                                key={vet.ID} 
+                                                key={vet.id} 
                                                 style={{
                                                     display:'flex', alignItems:'center', gap:'15px', 
                                                     padding:'15px', borderRadius:'10px', border:'1px solid #eee',
                                                     backgroundColor: '#fff', boxShadow:'0 2px 5px rgba(0,0,0,0.02)',
                                                 }}
                                             >
-                                                {vet.Logo ? (
-                                                    <img src={vet.Logo} style={{width:'50px', height:'50px', borderRadius:'50%', objectFit:'cover', border:'1px solid #eee'}} alt="Logo" />
+                                                {vet.logo ? (
+                                                    <img src={vet.logo} style={{width:'50px', height:'50px', borderRadius:'50%', objectFit:'cover', border:'1px solid #eee'}} alt="Logo" />
                                                 ) : (
                                                     <div style={{width:'50px', height:'50px', borderRadius:'50%', background:'#f0f2f5', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'20px'}}>🏥</div>
                                                 )}
 
                                                 <div style={{flex: 1}}>
-                                                    <h4 style={{margin:0, color:'#333', fontSize:'15px'}}>{vet.NombreComercial}</h4>
-                                                    <p style={{margin:'2px 0 0', fontSize:'12px', color:'#888'}}>{vet.Ciudad} • ID: {vet.ID}</p>
+                                                    <h4 style={{margin:0, color:'#333', fontSize:'15px'}}>{vet.nombre_comercial}</h4>
+                                                    <p style={{margin:'2px 0 0', fontSize:'12px', color:'#888'}}>{vet.ciudad} • ID: {vet.id}</p>
                                                 </div>
 
                                                 <div style={{display:'flex', flexDirection:'column', alignItems:'end', gap:'5px'}}>
@@ -190,13 +190,13 @@ const Inicio: React.FC = () => {
                                                         fontSize:'11px', fontWeight:'bold', padding:'4px 10px', borderRadius:'15px',
                                                         backgroundColor: colores.bg, color: colores.text, border:`1px solid ${colores.border}`
                                                     }}>
-                                                        {vet.EstadoVerificacion}
+                                                        {vet.estado_verificacion}
                                                     </span>
                                                     
                                                     <button 
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            navigate(`/editar-veterinaria/${vet.ID}`);
+                                                            navigate(`/editar-veterinaria/${vet.id}`);
                                                         }}
                                                         style={{
                                                             fontSize: '12px', 
@@ -235,20 +235,20 @@ const Inicio: React.FC = () => {
 
                             {notificacionesImportantes.map(vet => {
                                 // 1. CASO RECHAZADA
-                                if (vet.EstadoVerificacion === 'Rechazada') {
+                                if (vet.estado_verificacion === 'Rechazada') {
                                     return (
-                                        <div key={vet.ID} style={{
+                                        <div key={vet.id} style={{
                                             display: 'flex', gap: '15px', padding: '15px', 
                                             backgroundColor: '#fff5f5', borderLeft: '4px solid #dc3545', borderRadius: '4px',
                                             alignItems: 'flex-start'
                                         }}>
                                             <div style={{color: '#dc3545', fontSize: '20px'}}>⚠️</div>
                                             <div>
-                                                <h4 style={{margin: '0 0 5px 0', color: '#721c24', fontSize: '14px'}}>Solicitud Rechazada: {vet.NombreComercial}</h4>
+                                                <h4 style={{margin: '0 0 5px 0', color: '#721c24', fontSize: '14px'}}>Solicitud Rechazada: {vet.nombre_comercial}</h4>
                                                 <p style={{margin: 0, fontSize: '13px', color: '#555'}}>
-                                                    <strong>Motivo:</strong> {vet.MotivoRechazo || 'No se especificó un motivo.'}
+                                                    <strong>Motivo:</strong> {vet.referencias || 'No se especificó un motivo.'}
                                                 </p>
-                                                <Link to={`/editar-veterinaria/${vet.ID}`} style={{fontSize:'12px', color:'#dc3545', textDecoration:'underline', marginTop:'5px', display:'inline-block'}}>
+                                                <Link to={`/editar-veterinaria/${vet.id}`} style={{fontSize:'12px', color:'#dc3545', textDecoration:'underline', marginTop:'5px', display:'inline-block'}}>
                                                     Corregir información
                                                 </Link>
                                             </div>
@@ -256,16 +256,16 @@ const Inicio: React.FC = () => {
                                     );
                                 } 
                                 // 2. CASO APROBADA
-                                else if (vet.EstadoVerificacion === 'Aprobada') {
+                                else if (vet.estado_verificacion === 'Aprobada') {
                                     return (
-                                        <div key={vet.ID} style={{
+                                        <div key={vet.id} style={{
                                             display: 'flex', gap: '15px', padding: '15px', 
                                             backgroundColor: '#f0fff4', borderLeft: '4px solid #28a745', borderRadius: '4px',
                                             alignItems: 'flex-start'
                                         }}>
                                             <div style={{color: '#28a745', fontSize: '20px'}}>✅</div>
                                             <div>
-                                                <h4 style={{margin: '0 0 5px 0', color: '#155724', fontSize: '14px'}}>¡Felicidades! {vet.NombreComercial} ha sido aprobada.</h4>
+                                                <h4 style={{margin: '0 0 5px 0', color: '#155724', fontSize: '14px'}}>¡Felicidades! {vet.nombre_comercial} ha sido aprobada.</h4>
                                                 <p style={{margin: 0, fontSize: '13px', color: '#555'}}>
                                                     Tu clínica ya está visible. Configura tus horarios para comenzar.
                                                 </p>
@@ -274,16 +274,16 @@ const Inicio: React.FC = () => {
                                     );
                                 }
                                 // 3. CASO PENDIENTE (NUEVO)
-                                else if (vet.EstadoVerificacion === 'Pendiente') {
+                                else if (vet.estado_verificacion === 'Pendiente') {
                                     return (
-                                        <div key={vet.ID} style={{
+                                        <div key={vet.id} style={{
                                             display: 'flex', gap: '15px', padding: '15px', 
                                             backgroundColor: '#fffbf0', borderLeft: '4px solid #ffc107', borderRadius: '4px',
                                             alignItems: 'flex-start'
                                         }}>
                                             <div style={{color: '#ffc107', fontSize: '20px'}}>⏳</div>
                                             <div>
-                                                <h4 style={{margin: '0 0 5px 0', color: '#856404', fontSize: '14px'}}>Solicitud en Revisión: {vet.NombreComercial}</h4>
+                                                <h4 style={{margin: '0 0 5px 0', color: '#856404', fontSize: '14px'}}>Solicitud en Revisión: {vet.nombre_comercial}</h4>
                                                 <p style={{margin: 0, fontSize: '13px', color: '#666'}}>
                                                     Estamos validando la información de tu veterinaria. Te notificaremos pronto.
                                                 </p>

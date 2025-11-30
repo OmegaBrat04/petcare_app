@@ -21,8 +21,7 @@ import RegistroUsuario from './RegistroUsuario';
 import Citas from './Citas'; 
 import EditarVet from './EditarVet'; // Importar el componente
 import Agenda from './Agenda'; // Importar el componente
-import Historial from './Historial'; // Importar
-import SolicitudesCitasUI from './SolicitudesCitas'
+import Historial from './Historial'; // Importarnpm 
 // Si está en la misma carpeta que este archivo, usa: import Citas from './Citas';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

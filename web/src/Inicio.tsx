@@ -5,12 +5,12 @@ import PETCARE_ICON_URL from "./assets/PetCare Manager.png";
 import { API_ENDPOINTS } from "./api.config";
 
 interface Veterinaria {
-    id: number;                    // ✅ Cambio: ID → id
-    nombre_comercial: string;      // ✅ Cambio: NombreComercial → nombre_comercial
-    ciudad: string;                // ✅ Cambio: Ciudad → ciudad
-    logo: string;                  // ✅ Cambio: Logo → logo
-    estado_verificacion: string;   // ✅ Cambio: EstadoVerificacion → estado_verificacion
-    referencias?: string;          // ✅ Cambio: MotivoRechazo → referencias
+    id: number;                  
+    nombre_comercial: string;      
+    ciudad: string;               
+    logo: string;                 
+    estado_verificacion: string;   
+    referencias?: string;          
 }
 
 const Inicio: React.FC = () => {
